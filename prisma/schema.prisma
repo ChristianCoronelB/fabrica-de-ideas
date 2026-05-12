@@ -1,0 +1,207 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Roles ───────────────────────────────────────────────
+enum RoleType {
+  ADMIN
+  PARTICIPANT
+  EVALUATOR
+}
+
+// ─── Project Status ──────────────────────────────────────
+enum ProjectStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  FINALIST
+  WINNER
+}
+
+// ─── Areas ───────────────────────────────────────────────
+model Area {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  projects  Project[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+// ─── Categories ──────────────────────────────────────────
+model Category {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  projects  Project[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+// ─── Institutions ────────────────────────────────────────
+model Institution {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  projects  Project[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+// ─── Users ───────────────────────────────────────────────
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  password      String
+  name          String
+  role          RoleType       @default(PARTICIPANT)
+  phone         String?
+  avatar        String?
+  active        Boolean        @default(true)
+  projects      Project[]
+  evaluations   Evaluation[]
+  assignedProjects ProjectEvaluator[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+}
+
+// ─── Projects ────────────────────────────────────────────
+model Project {
+  id              String         @id @default(cuid())
+  name            String
+  pitch           String
+  description     String
+  team            String
+  imageUrl        String?
+  status          ProjectStatus  @default(DRAFT)
+  leaderName      String
+  leaderEmail     String
+  leaderPhone     String?
+  leaderCourse    String?
+  leaderParallel  String?
+  tutorName       String?
+  locationMatrix  String?
+  locationSede    String?
+  locationExtension String?
+  totalScore      Float          @default(0)
+  averageScore    Float          @default(0)
+
+  areaId          String
+  area            Area           @relation(fields: [areaId], references: [id])
+  categoryId      String
+  category        Category       @relation(fields: [categoryId], references: [id])
+  institutionId   String
+  institution     Institution    @relation(fields: [institutionId], references: [id])
+  ownerId         String
+  owner           User           @relation(fields: [ownerId], references: [id])
+
+  attachments     Attachment[]
+  evaluators      ProjectEvaluator[]
+  evaluations     Evaluation[]
+  auditLogs       AuditLog[]
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?
+}
+
+// ─── Project-Evaluator (Many-to-Many) ────────────────────
+model ProjectEvaluator {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  evaluatorId String
+  evaluator   User     @relation(fields: [evaluatorId], references: [id], onDelete: Cascade)
+  assignedAt  DateTime @default(now())
+
+  @@unique([projectId, evaluatorId])
+}
+
+// ─── Evaluations ─────────────────────────────────────────
+model Evaluation {
+  id          String           @id @default(cuid())
+  projectId   String
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  evaluatorId String
+  evaluator   User             @relation(fields: [evaluatorId], references: [id])
+  totalScore  Float            @default(0)
+  comments    String?
+  isDraft     Boolean          @default(true)
+  submittedAt DateTime?
+  scores      EvaluationScore[]
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([projectId, evaluatorId])
+}
+
+// ─── Evaluation Criteria (Template) ─────────────────────
+model EvaluationCriteria {
+  id          String            @id @default(cuid())
+  name        String
+  description String
+  weight      Float
+  evidence    String
+  order       Int               @default(0)
+  scores      EvaluationScore[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+// ─── Evaluation Scores ──────────────────────────────────
+model EvaluationScore {
+  id            String             @id @default(cuid())
+  evaluationId  String
+  evaluation    Evaluation         @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  criteriaId    String
+  criteria      EvaluationCriteria @relation(fields: [criteriaId], references: [id])
+  score         Float              @default(0)
+  maxScore      Float
+  observation   String?
+
+  @@unique([evaluationId, criteriaId])
+}
+
+// ─── Attachments ─────────────────────────────────────────
+model Attachment {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  fileName  String
+  filePath  String
+  fileType  String
+  fileSize  Int
+  category  String?  // pdf, image, video, pitch_deck, evidence
+  createdAt DateTime @default(now())
+}
+
+// ─── Audit Log ──────────────────────────────────────────
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+}
+
+// ─── Notifications ──────────────────────────────────────
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  type      String   @default("info") // info, success, warning, error
+  createdAt DateTime @default(now())
+}

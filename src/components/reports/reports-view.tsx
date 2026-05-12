@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import {
   Trophy,
   Medal,
@@ -1384,25 +1384,23 @@ export function ReportsView() {
           )}
         </TabsList>
 
-        <AnimatePresence mode="wait">
-          <TabsContent value="ranking">
-            <RankingTab />
+        <TabsContent value="ranking">
+          <RankingTab />
+        </TabsContent>
+        <TabsContent value="category">
+          <CategoryTab />
+        </TabsContent>
+        <TabsContent value="area">
+          <AreaTab />
+        </TabsContent>
+        <TabsContent value="evaluators">
+          <EvaluatorTab />
+        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="finalists">
+            <FinalistsTab />
           </TabsContent>
-          <TabsContent value="category">
-            <CategoryTab />
-          </TabsContent>
-          <TabsContent value="area">
-            <AreaTab />
-          </TabsContent>
-          <TabsContent value="evaluators">
-            <EvaluatorTab />
-          </TabsContent>
-          {isAdmin && (
-            <TabsContent value="finalists">
-              <FinalistsTab />
-            </TabsContent>
-          )}
-        </AnimatePresence>
+        )}
       </Tabs>
     </motion.div>
   )

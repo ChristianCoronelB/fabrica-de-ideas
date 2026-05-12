@@ -133,7 +133,7 @@ function CriterionCard({
   onScoreChange: (criteriaId: string, score: number) => void
   onObservationChange: (criteriaId: string, observation: string) => void
 }) {
-  const { criteria, score, maxScore } = scoreEntry
+  const { criteriaId, criteria, score, maxScore } = scoreEntry
   const pct = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0
 
   return (

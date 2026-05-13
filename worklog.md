@@ -610,3 +610,27 @@ Settings page accessible to all authenticated users with:
 - All views use teal/emerald accent colors matching the app theme
 - shadcn/ui components used throughout: Card, Table, Dialog, AlertDialog, Tabs, Badge, Switch, Select, Button, Input, Label, Avatar
 - All components pass `bun run lint` with zero errors
+
+---
+Task ID: fix-preview
+Agent: Main Agent
+Task: Fix application preview not visible - dev server OOM crash
+
+Work Log:
+- Investigated dev server crash: FATAL ERROR: Ineffective mark-compacts near heap limit (JavaScript heap out of memory)
+- Fixed duplicate key error from previous session (reports-view.tsx AnimatePresence)
+- Converted all 11 view component imports from static to dynamic imports using `next/dynamic` in app-shell.tsx to reduce initial compilation memory
+- Also made LoginPage and AppShell dynamic imports in page.tsx
+- Removed framer-motion from app-shell.tsx (AnimatePresence, motion.div) to reduce bundle size
+- Disabled Prisma query logging (was flooding dev.log with thousands of query lines)
+- Set NODE_OPTIONS="--max-old-space-size=1536" to balance between memory ceiling and GC aggressiveness
+- Added allowedDevOrigins to next.config.ts for .space-z.ai domain
+- Created auto-restart supervisor script (start-dev.sh)
+- Server now compiles and serves pages successfully at ~1.1GB memory usage
+
+Stage Summary:
+- Root cause: Next.js Turbopack dev server OOM during compilation with many heavy dependencies (recharts, framer-motion, prisma, shadcn/ui)
+- Fix: Dynamic imports for all view components + reduced Prisma logging + memory limit tuning
+- Server is stable for ~90-120 seconds before OS OOM killer terminates it
+- Application works correctly during uptime: login, dashboard, API calls all functional
+- Auto-restart supervisor created to recover from crashes

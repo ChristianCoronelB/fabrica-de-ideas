@@ -1,7 +1,7 @@
 'use client'
 
-import React from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import React, { Suspense } from 'react'
+import dynamic from 'next/dynamic'
 import { useTheme } from 'next-themes'
 import {
   Lightbulb,
@@ -59,19 +59,29 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useAuthStore } from '@/store/auth-store'
 import { useNavStore, type View } from '@/store/nav-store'
-import { AdminDashboard } from '@/components/dashboard/admin-dashboard'
-import { EvaluatorDashboard } from '@/components/dashboard/evaluator-dashboard'
-import { ParticipantDashboard } from '@/components/dashboard/participant-dashboard'
-import { ProjectsList } from '@/components/projects/projects-list'
-import { ProjectDetail } from '@/components/projects/project-detail'
-import { ProjectForm } from '@/components/projects/project-form'
-import { EvaluationsList } from '@/components/evaluations/evaluations-list'
-import { EvaluationDetail } from '@/components/evaluations/evaluation-detail'
-import { EvaluatorsView } from '@/components/evaluators/evaluators-view'
-import { UsersView } from '@/components/users/users-view'
-import { NotificationsView } from '@/components/notifications/notifications-view'
-import { SettingsView } from '@/components/settings/settings-view'
-import { ReportsView } from '@/components/reports/reports-view'
+
+// Lazy-loaded view components to reduce initial memory footprint
+const AdminDashboard = dynamic(() => import('@/components/dashboard/admin-dashboard').then(m => ({ default: m.AdminDashboard })), { ssr: false })
+const EvaluatorDashboard = dynamic(() => import('@/components/dashboard/evaluator-dashboard').then(m => ({ default: m.EvaluatorDashboard })), { ssr: false })
+const ParticipantDashboard = dynamic(() => import('@/components/dashboard/participant-dashboard').then(m => ({ default: m.ParticipantDashboard })), { ssr: false })
+const ProjectsList = dynamic(() => import('@/components/projects/projects-list').then(m => ({ default: m.ProjectsList })), { ssr: false })
+const ProjectDetail = dynamic(() => import('@/components/projects/project-detail').then(m => ({ default: m.ProjectDetail })), { ssr: false })
+const ProjectForm = dynamic(() => import('@/components/projects/project-form').then(m => ({ default: m.ProjectForm })), { ssr: false })
+const EvaluationsList = dynamic(() => import('@/components/evaluations/evaluations-list').then(m => ({ default: m.EvaluationsList })), { ssr: false })
+const EvaluationDetail = dynamic(() => import('@/components/evaluations/evaluation-detail').then(m => ({ default: m.EvaluationDetail })), { ssr: false })
+const EvaluatorsView = dynamic(() => import('@/components/evaluators/evaluators-view').then(m => ({ default: m.EvaluatorsView })), { ssr: false })
+const UsersView = dynamic(() => import('@/components/users/users-view').then(m => ({ default: m.UsersView })), { ssr: false })
+const NotificationsView = dynamic(() => import('@/components/notifications/notifications-view').then(m => ({ default: m.NotificationsView })), { ssr: false })
+const SettingsView = dynamic(() => import('@/components/settings/settings-view').then(m => ({ default: m.SettingsView })), { ssr: false })
+const ReportsView = dynamic(() => import('@/components/reports/reports-view').then(m => ({ default: m.ReportsView })), { ssr: false })
+
+function ViewLoader() {
+  return (
+    <div className="flex items-center justify-center py-16">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-200 border-t-emerald-500" />
+    </div>
+  )
+}
 
 interface NavItem {
   view: View
@@ -134,12 +144,7 @@ function getViewLabel(view: View): string {
 
 function PlaceholderView({ view }: { view: View }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="space-y-6"
-    >
+    <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">{getViewLabel(view)}</h1>
         <p className="text-muted-foreground mt-1">
@@ -155,7 +160,7 @@ function PlaceholderView({ view }: { view: View }) {
           Esta vista estará disponible próximamente. Estamos trabajando para ofrecerte la mejor experiencia.
         </p>
       </div>
-    </motion.div>
+    </div>
   )
 }
 
@@ -416,9 +421,9 @@ export function AppShell() {
         <TopBar />
         <div className="flex-1 overflow-auto">
           <div className="p-6">
-            <AnimatePresence mode="wait">
+            <Suspense fallback={<ViewLoader />}>
               <ViewRenderer />
-            </AnimatePresence>
+            </Suspense>
           </div>
         </div>
       </SidebarInset>

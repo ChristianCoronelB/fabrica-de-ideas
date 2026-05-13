@@ -1,10 +1,13 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React, { useEffect, Suspense } from 'react'
+import dynamic from 'next/dynamic'
 import { useAuthStore } from '@/store/auth-store'
-import { LoginPage } from '@/components/auth/login-page'
-import { AppShell } from '@/components/app-shell'
 import { Loader2 } from 'lucide-react'
+
+// Lazy load heavy components
+const LoginPage = dynamic(() => import('@/components/auth/login-page').then(m => ({ default: m.LoginPage })), { ssr: false })
+const AppShell = dynamic(() => import('@/components/app-shell').then(m => ({ default: m.AppShell })), { ssr: false })
 
 export default function Home() {
   const { isAuthenticated, isLoading, checkAuth } = useAuthStore()

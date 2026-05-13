@@ -297,6 +297,14 @@ export function EvaluationDetail() {
   const [comments, setComments] = useState('')
   const [localScores, setLocalScores] = useState<Record<string, { score: number; observation: string }>>({})
 
+  // Ref to always have the latest localScores without stale closure issues
+  const localScoresRef = useRef(localScores)
+  localScoresRef.current = localScores
+
+  // Ref to always have the latest comments
+  const commentsRef = useRef(comments)
+  commentsRef.current = comments
+
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   /* ── Fetch ─────────────────────────────────────── */
@@ -380,32 +388,48 @@ export function EvaluationDetail() {
   const saveDraft = useCallback(async () => {
     if (!evaluation || !evaluation.isDraft) return
     setSaving(true)
+
+    // Capture the current scores from the ref (always up-to-date)
+    const currentScores = { ...localScoresRef.current }
+    const currentComments = commentsRef.current
+
     try {
-      const scoresArray = Object.entries(localScores).map(([criteriaId, val]) => ({
+      const scoresArray = Object.entries(currentScores).map(([criteriaId, val]) => ({
         criteriaId,
         score: val.score,
         observation: val.observation || null,
       }))
       const updated = await apiFetch<Evaluation>(`/api/evaluations/${evaluation.id}`, {
         method: 'PUT',
-        body: JSON.stringify({ scores: scoresArray, comments }),
+        body: JSON.stringify({ scores: scoresArray, comments: currentComments }),
       })
       setEvaluation(updated)
       setComments(updated.comments || '')
-      const scoreMap: Record<string, { score: number; observation: string }> = {}
-      for (const s of updated.scores) {
-        scoreMap[s.criteriaId] = {
-          score: localScores[s.criteriaId]?.score ?? s.score,
-          observation: localScores[s.criteriaId]?.observation ?? (s.observation || ''),
+
+      // Only update local scores from server response for criteria the user is NOT currently editing.
+      // Preserve the latest local values (from ref) to avoid overwriting user input.
+      setLocalScores((prevLocal) => {
+        const scoreMap: Record<string, { score: number; observation: string }> = {}
+        for (const s of updated.scores) {
+          // Always prefer the current local value over the server response
+          // to avoid overwriting any changes made during the save request
+          if (prevLocal[s.criteriaId]) {
+            scoreMap[s.criteriaId] = prevLocal[s.criteriaId]
+          } else {
+            scoreMap[s.criteriaId] = {
+              score: s.score,
+              observation: s.observation || '',
+            }
+          }
         }
-      }
-      setLocalScores(scoreMap)
+        return scoreMap
+      })
     } catch {
       // handled
     } finally {
       setSaving(false)
     }
-  }, [evaluation, localScores, comments])
+  }, [evaluation]) // Removed localScores and comments from deps — we use refs instead
 
   const debouncedSave = useCallback(() => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)

@@ -634,3 +634,25 @@ Stage Summary:
 - Server is stable for ~90-120 seconds before OS OOM killer terminates it
 - Application works correctly during uptime: login, dashboard, API calls all functional
 - Auto-restart supervisor created to recover from crashes
+
+---
+Task ID: 1
+Agent: Main Agent
+Task: Fix auto-save overwriting evaluator's selected scores in evaluation-detail.tsx
+
+Work Log:
+- Read and analyzed evaluation-detail.tsx to understand auto-save flow
+- Identified root cause: stale closure bug in `saveDraft` useCallback
+- `saveDraft` had `localScores` and `comments` in its dependency array, causing it to capture stale values
+- When auto-save completed, `setLocalScores(scoreMap)` overwrote user's current edits with old values from the closure
+- Added `localScoresRef` and `commentsRef` refs to always access latest state values without stale closures
+- Changed `saveDraft` to read from refs instead of closure variables
+- Changed post-save `setLocalScores` to use functional update, always preferring `prevLocal` values over server response
+- Removed `localScores` and `comments` from `saveDraft` dependency array (now using refs)
+- Cleaned up unused `skipScoreOverwriteRef`
+- Verified lint passes with no errors
+
+Stage Summary:
+- Fixed the bug where scores would change/reset when auto-save triggered
+- Root cause was stale closure in useCallback + overwriting local state with server response
+- Solution: use refs for latest values + functional setState to preserve user edits

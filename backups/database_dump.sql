@@ -1,5 +1,5 @@
 -- Fábrica de Ideas Database Dump
--- Generated at: 2026-05-17T23:26:46.199Z
+-- Generated at: 2026-05-17T23:29:16.170Z
 -- ============================================
 
 -- Table: Area

@@ -656,3 +656,76 @@ Stage Summary:
 - Fixed the bug where scores would change/reset when auto-save triggered
 - Root cause was stale closure in useCallback + overwriting local state with server response
 - Solution: use refs for latest values + functional setState to preserve user edits
+
+## Task 3 (Backup): Build Auto-Backup/Restore System with Git Persistence
+**Completed:** 2026-05-17
+
+### What was done:
+
+#### 1. Created Shared Backup Module (scripts/backup-module.ts)
+- TypeScript module using `bun:sqlite` for database operations
+- `performBackup()` - Dumps all tables from SQLite to SQL format, syncs uploads, writes metadata
+- `performRestore()` - Restores database from SQL dump with transaction safety, restores uploads
+- `getBackupStatus()` - Returns last backup timestamp, dump existence, and uploads count
+- Database dump includes: table schemas (DROP TABLE + CREATE), all row data as INSERT statements, indexes
+- Smart upload sync: only copies files that are new or changed (size/mtime comparison)
+- Error handling: graceful failures with transaction rollback on restore
+
+#### 2. Created Standalone Backup Script (scripts/backup.ts)
+- Imports performBackup() from backup-module and executes it
+- Run with: `bun run scripts/backup.ts`
+- Exits with code 1 on failure
+
+#### 3. Created Standalone Restore Script (scripts/restore.ts)
+- Imports performRestore() from backup-module and executes it
+- Idempotent - safe to run multiple times
+- Exits with code 1 on failure
+
+#### 4. Created Auto-Backup Daemon (scripts/auto-backup-daemon.sh)
+- Bash script that runs in an infinite loop
+- Every 5 minutes: dumps database via sqlite3 (with fallback to bun script), syncs uploads, commits to git
+- Logs to ./backups/backup.log
+- Only commits to git when there are actual changes (checks `git diff --cached --quiet`)
+- Handles errors gracefully (continues on error)
+
+#### 5. Created Restore Shell Script (scripts/restore.sh)
+- Bash script for restoring from backup
+- Idempotent - safe to run multiple times
+- Checks if backup dump exists before attempting restore
+- Tries bun restore script first, falls back to sqlite3 if available
+- Restores uploads from backup directory
+- Commits restore state to git
+
+#### 6. Created Backup API Endpoint (src/app/api/backup/route.ts)
+- **POST /api/backup** - Triggers backup by spawning `bun run scripts/backup.ts` subprocess, then commits to git. Requires authentication (middleware). Returns { success, timestamp }
+- **GET /api/backup** - Returns backup status: dumpExists, lastBackup timestamp, tablesDumped, uploadsCount. Requires authentication.
+- Uses `runtime = 'nodejs'` since it uses `child_process.execSync`
+- Cannot import `bun:sqlite` directly in Next.js, so spawns the bun script
+
+#### 7. Created Auto-Backup Component (src/components/auto-backup.tsx)
+- 'use client' component that triggers backup via `/api/backup` endpoint
+- First backup after 30 seconds (lets app settle), then every 3 minutes
+- Checks for auth token in localStorage before making request
+- Silent operation - no UI, just background task (returns null)
+- Proper cleanup with clearInterval/clearTimeout on unmount
+- Added to AppShell component (renders when authenticated)
+
+#### 8. Updated start-dev.sh
+- Added auto-restore: runs `bun run scripts/restore.ts` before starting dev server
+- Added auto-backup daemon: starts `bash scripts/auto-backup-daemon.sh` in background
+- Runs initial backup: `bun run scripts/backup.ts` before entering server loop
+- All operations logged to dev.log
+
+#### 9. Created Backups Directory
+- Created `./backups/` and `./backups/uploads/` directories
+- Initial backup performed and committed to git
+
+### Key Decisions:
+- Git commits as the primary persistence mechanism - survive container resets
+- `bun:sqlite` used for CLI scripts (correct Bun API), but API endpoint spawns subprocess since Next.js can't import `bun:sqlite`
+- Backup daemon is a bash script (more reliable than Node.js daemon - no memory leaks, no process management issues)
+- Database dump uses raw SQL (not binary copy) for cross-version compatibility and git-friendliness
+- Upload sync uses size+mtime comparison to avoid unnecessary copies
+- Restore is idempotent - safe to run on every startup without side effects
+- Auto-backup component only runs when authenticated (token check in localStorage)
+- API endpoint behind middleware auth (requires valid JWT)

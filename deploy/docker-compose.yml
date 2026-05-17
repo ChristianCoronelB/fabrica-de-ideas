@@ -1,0 +1,34 @@
+version: "3.8"
+
+services:
+  fabrica-de-ideas:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+    container_name: fabrica-de-ideas
+    restart: always
+    ports:
+      - "80:3000"
+    volumes:
+      - fabrica-db:/app/db
+      - fabrica-uploads:/app/public/uploads
+      - fabrica-backups:/app/backups
+    environment:
+      - DATABASE_URL=file:../db/custom.db
+      - NODE_ENV=production
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+      - PASSWORD_SALT=${PASSWORD_SALT:-change-me-in-production}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  fabrica-db:
+    driver: local
+  fabrica-uploads:
+    driver: local
+  fabrica-backups:
+    driver: local

@@ -59,6 +59,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useAuthStore } from '@/store/auth-store'
 import { useNavStore, type View } from '@/store/nav-store'
+import { AutoBackup } from '@/components/auto-backup'
 
 // Lazy-loaded view components to reduce initial memory footprint
 const AdminDashboard = dynamic(() => import('@/components/dashboard/admin-dashboard').then(m => ({ default: m.AdminDashboard })), { ssr: false })
@@ -427,6 +428,7 @@ export function AppShell() {
           </div>
         </div>
       </SidebarInset>
+      <AutoBackup />
     </SidebarProvider>
   )
 }

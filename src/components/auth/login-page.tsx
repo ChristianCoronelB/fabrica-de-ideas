@@ -256,51 +256,6 @@ export function LoginPage() {
                       </p>
                     </div>
 
-                    {/* Quick login buttons for demo */}
-                    <div className="mt-4 pt-4 border-t">
-                      <p className="text-xs text-muted-foreground text-center mb-3">Acceso rápido (demo)</p>
-                      <div className="grid grid-cols-3 gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="text-xs h-8"
-                          disabled={isLoading}
-                          onClick={() => {
-                            setEmail('admin@fabrica.com')
-                            setPassword('admin123')
-                          }}
-                        >
-                          Admin
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="text-xs h-8"
-                          disabled={isLoading}
-                          onClick={() => {
-                            setEmail('participante@fabrica.com')
-                            setPassword('part123')
-                          }}
-                        >
-                          Participante
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="text-xs h-8"
-                          disabled={isLoading}
-                          onClick={() => {
-                            setEmail('evaluador@fabrica.com')
-                            setPassword('eval123')
-                          }}
-                        >
-                          Evaluador
-                        </Button>
-                      </div>
-                    </div>
                   </CardContent>
                 </Card>
               </motion.div>

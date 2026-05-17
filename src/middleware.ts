@@ -6,7 +6,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Only protect API routes (except auth routes)
-  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth/')) {
+  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth/') && !pathname.startsWith('/api/settings') && !pathname.startsWith('/api/download')) {
     const authHeader = request.headers.get('Authorization')
     const token = extractTokenFromHeader(authHeader)
 

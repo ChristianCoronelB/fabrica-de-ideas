@@ -12,6 +12,7 @@ import {
   Loader2,
   BarChart3,
   Eye,
+  Trash2,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useAuthStore } from '@/store/auth-store'
@@ -37,6 +38,17 @@ import {
 } from '@/components/ui/table'
 import { ScoreCircle } from './score-circle'
 import { EvaluationCreateDialog } from './evaluation-create-dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 
 interface EvaluationCriteria {
   id: string
@@ -88,11 +100,22 @@ export function EvaluationsList() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'submitted'>('all')
   const [projectFilter, setProjectFilter] = useState<string>('all')
   const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const { user } = useAuthStore()
   const { navigate } = useNavStore()
 
   const isAdmin = user?.role === 'ADMIN'
   const isEvaluator = user?.role === 'EVALUATOR'
+
+  const handleDeleteEvaluation = async (id: string) => {
+    try {
+      await apiFetch(`/api/evaluations/${id}`, { method: 'DELETE' })
+      setDeletingId(null)
+      fetchEvaluations()
+    } catch {
+      // handled by apiFetch
+    }
+  }
 
   const fetchEvaluations = useCallback(async () => {
     setLoading(true)
@@ -359,10 +382,44 @@ export function EvaluationsList() {
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Eye className="h-4 w-4 mr-1" />
-                        Ver
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Eye className="h-4 w-4 mr-1" />
+                          Ver
+                        </Button>
+                        <AlertDialog open={deletingId === evaluation.id} onOpenChange={(open) => !open && setDeletingId(null)}>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setDeletingId(evaluation.id)
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                ¿Estás seguro de que deseas eliminar esta evaluación? Esta acción no se puede deshacer.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteEvaluation(evaluation.id)}
+                                className="bg-destructive text-white hover:bg-destructive/90"
+                              >
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </TableCell>
                   </motion.tr>
                 ))}

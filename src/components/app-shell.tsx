@@ -418,7 +418,7 @@ export function AppShell() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset>
+      <SidebarInset className="flex flex-col">
         <TopBar />
         <div className="flex-1 overflow-auto">
           <div className="p-6">
@@ -427,6 +427,9 @@ export function AppShell() {
             </Suspense>
           </div>
         </div>
+        <footer className="border-t py-3 px-6 text-center text-xs text-muted-foreground shrink-0">
+          © {new Date().getFullYear()} Fábrica de Ideas. Todos los derechos reservados.
+        </footer>
       </SidebarInset>
       <AutoBackup />
     </SidebarProvider>

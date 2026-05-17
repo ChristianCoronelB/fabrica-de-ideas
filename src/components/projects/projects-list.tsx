@@ -11,6 +11,7 @@ import {
   Star,
   ChevronLeft,
   ChevronRight,
+  Trash2,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -32,6 +33,17 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { useAuthStore } from '@/store/auth-store'
 import { useNavStore } from '@/store/nav-store'
 import { apiFetch } from '@/lib/api'
@@ -171,8 +183,27 @@ function ProjectCard({ project }: { project: ProjectListItem }) {
   )
 }
 
-function ProjectRow({ project }: { project: ProjectListItem }) {
+interface User {
+  id: string
+  role: string
+}
+
+function ProjectRow({ project, user, onDelete }: { project: ProjectListItem; user: User | null; onDelete: (id: string) => void }) {
   const { navigate } = useNavStore()
+  const [deleting, setDeleting] = useState(false)
+
+  const canDelete = user?.role === 'ADMIN' || (user?.role === 'PARTICIPANT' && project.owner.id === user.id)
+
+  const handleDelete = async () => {
+    try {
+      await apiFetch(`/api/projects/${project.id}`, { method: 'DELETE' })
+      onDelete(project.id)
+    } catch {
+      // handled by apiFetch
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   return (
     <TableRow
@@ -216,16 +247,52 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
         )}
       </TableCell>
       <TableCell>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation()
-            navigate('project-detail', { id: project.id })
-          }}
-        >
-          Ver
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation()
+              navigate('project-detail', { id: project.id })
+            }}
+          >
+            Ver
+          </Button>
+          {canDelete && (
+            <AlertDialog open={deleting} onOpenChange={(open) => !open && setDeleting(false)}>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="hover:text-destructive"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setDeleting(true)
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    ¿Estás seguro de que deseas eliminar este proyecto? Esta acción no se puede deshacer.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDelete}
+                    className="bg-destructive text-white hover:bg-destructive/90"
+                  >
+                    Eliminar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
       </TableCell>
     </TableRow>
   )
@@ -487,7 +554,7 @@ export function ProjectsList() {
             </TableHeader>
             <TableBody>
               {projects.map((project) => (
-                <ProjectRow key={project.id} project={project} />
+                <ProjectRow key={project.id} project={project} user={user} onDelete={(id) => setProjects((prev) => prev.filter((p) => p.id !== id))} />
               ))}
             </TableBody>
           </Table>

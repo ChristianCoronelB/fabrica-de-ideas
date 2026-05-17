@@ -12,9 +12,11 @@ import {
   Loader2,
   FileText,
   ChevronRight,
+  Info,
+  Video,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -27,6 +29,7 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useAuthStore } from '@/store/auth-store'
 import { useNavStore } from '@/store/nav-store'
 import { apiFetch } from '@/lib/api'
@@ -86,6 +89,23 @@ const STEPS = [
   { number: 4, title: 'Archivos y Revisión' },
 ]
 
+// ─── FieldTooltip Component ────────────────────────────────
+function FieldTooltip({ text }: { text: string }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button type="button" className="inline-flex ml-1 text-muted-foreground hover:text-foreground">
+          <Info className="h-3.5 w-3.5" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent side="top" className="text-xs max-w-[250px] p-2">
+        {text}
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+// ─── StepIndicator Component ────────────────────────────────
 function StepIndicator({ currentStep }: { currentStep: number }) {
   return (
     <div className="w-full">
@@ -136,22 +156,26 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
   )
 }
 
+// ─── FormField Component ────────────────────────────────────
 function FormField({
   label,
   required,
   error,
+  tooltip,
   children,
 }: {
   label: string
   required?: boolean
   error?: string
+  tooltip?: string
   children: React.ReactNode
 }) {
   return (
     <div className="space-y-2">
-      <Label className="text-sm font-medium">
+      <Label className="text-sm font-medium flex items-center">
         {label}
         {required && <span className="text-destructive ml-1">*</span>}
+        {tooltip && <FieldTooltip text={tooltip} />}
       </Label>
       {children}
       {error && <p className="text-xs text-destructive">{error}</p>}
@@ -159,6 +183,7 @@ function FormField({
   )
 }
 
+// ─── Main ProjectForm Component ─────────────────────────────
 export function ProjectForm() {
   const { user } = useAuthStore()
   const { viewParams, goBack } = useNavStore()
@@ -174,6 +199,16 @@ export function ProjectForm() {
   const [categories, setCategories] = useState<Category[]>([])
   const [institutions, setInstitutions] = useState<Institution[]>([])
 
+  // Image file state
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string>('')
+
+  // Video pitch state
+  const [videoFile, setVideoFile] = useState<File | null>(null)
+  const [videoPreview, setVideoPreview] = useState<string>('')
+  const [videoDurationError, setVideoDurationError] = useState('')
+  const [existingPitchVideo, setExistingPitchVideo] = useState<Attachment | null>(null)
+
   // Form state
   const [formData, setFormData] = useState({
     name: '',
@@ -187,6 +222,7 @@ export function ProjectForm() {
     leaderEmail: user?.email || '',
     leaderPhone: '',
     institutionId: '',
+    institutionName: '',
     leaderCourse: '',
     leaderParallel: '',
     locationMatrix: '',
@@ -218,6 +254,8 @@ export function ProjectForm() {
     setIsLoadingProject(true)
     apiFetch<ExistingProject>(`/api/projects/${editId}`)
       .then((project) => {
+        // Find institution name from the loaded list or from project data
+        const instName = institutions.find((i) => i.id === project.institutionId)?.name || ''
         setFormData({
           name: project.name,
           pitch: project.pitch,
@@ -230,6 +268,7 @@ export function ProjectForm() {
           leaderEmail: project.leaderEmail,
           leaderPhone: project.leaderPhone || '',
           institutionId: project.institutionId,
+          institutionName: instName,
           leaderCourse: project.leaderCourse || '',
           leaderParallel: project.leaderParallel || '',
           locationMatrix: project.locationMatrix || '',
@@ -237,13 +276,22 @@ export function ProjectForm() {
           locationExtension: project.locationExtension || '',
           tutorName: project.tutorName || '',
         })
+        if (project.imageUrl) {
+          setImagePreview(project.imageUrl)
+        }
         setExistingAttachments(project.attachments || [])
+
+        // Find existing pitch video
+        const pitchVideo = project.attachments?.find((a) => a.category === 'pitch_video')
+        if (pitchVideo) {
+          setExistingPitchVideo(pitchVideo)
+        }
       })
       .catch(() => {
         toast.error('Error al cargar el proyecto')
       })
       .finally(() => setIsLoadingProject(false))
-  }, [editId])
+  }, [editId, institutions])
 
   const updateField = useCallback((field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -264,6 +312,7 @@ export function ProjectForm() {
       if (!formData.team.trim()) newErrors.team = 'El equipo es obligatorio'
       if (!formData.areaId) newErrors.areaId = 'Selecciona un área'
       if (!formData.categoryId) newErrors.categoryId = 'Selecciona una categoría'
+      if (videoDurationError) newErrors.videoPitch = videoDurationError
     }
 
     if (step === 2) {
@@ -271,7 +320,7 @@ export function ProjectForm() {
       if (!formData.leaderEmail.trim()) newErrors.leaderEmail = 'El correo es obligatorio'
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.leaderEmail))
         newErrors.leaderEmail = 'Correo electrónico inválido'
-      if (!formData.institutionId) newErrors.institutionId = 'Selecciona una institución'
+      if (!formData.institutionName.trim()) newErrors.institutionName = 'La institución es obligatoria'
     }
 
     setErrors(newErrors)
@@ -288,43 +337,135 @@ export function ProjectForm() {
     setCurrentStep((prev) => Math.max(prev - 1, 1))
   }
 
+  // ─── Image Upload Handler ────────────────────────────────
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file || !editId) {
-      if (file) {
-        // Store for later upload after project creation
-        const reader = new FileReader()
-        reader.onload = (ev) => {
-          updateField('imageUrl', ev.target?.result as string)
-        }
-        reader.readAsDataURL(file)
-      }
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Solo se permiten archivos de imagen')
       return
     }
-    // If editing, upload immediately
-    try {
-      const formDataObj = new FormData()
-      formDataObj.append('file', file)
-      formDataObj.append('projectId', editId)
-      formDataObj.append('category', 'image')
-      const token = localStorage.getItem('fabrica_token')
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formDataObj,
-      })
-      if (res.ok) {
-        const attachment = await res.json()
-        updateField('imageUrl', attachment.filePath)
+
+    // Show preview
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      setImagePreview(ev.target?.result as string)
+    }
+    reader.readAsDataURL(file)
+
+    if (isEditing && editId) {
+      // If editing, upload immediately
+      try {
+        const formDataObj = new FormData()
+        formDataObj.append('file', file)
+        formDataObj.append('projectId', editId)
+        formDataObj.append('category', 'image')
+        const token = localStorage.getItem('fabrica_token')
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formDataObj,
+        })
+        if (res.ok) {
+          const attachment = await res.json()
+          updateField('imageUrl', attachment.filePath)
+          setImagePreview(attachment.filePath)
+          toast.success('Imagen subida correctamente')
+        }
+      } catch {
+        toast.error('Error al subir imagen')
       }
-    } catch {
-      toast.error('Error al subir imagen')
+    } else {
+      // If creating, store the File object for later upload
+      setImageFile(file)
     }
   }
 
+  // ─── Video Pitch Upload Handler ──────────────────────────
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('video/')) {
+      toast.error('Solo se permiten archivos de video')
+      return
+    }
+
+    // Validate file size (max 20MB)
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error('El video no debe superar los 20MB')
+      return
+    }
+
+    setVideoDurationError('')
+
+    // Create blob URL for preview and duration check
+    const videoUrl = URL.createObjectURL(file)
+    const videoElement = document.createElement('video')
+    videoElement.preload = 'metadata'
+
+    videoElement.onloadedmetadata = () => {
+      if (videoElement.duration > 90) {
+        setVideoDurationError('El video debe tener una duración máxima de 1 minuto y 30 segundos')
+        URL.revokeObjectURL(videoUrl)
+        setVideoFile(null)
+        setVideoPreview('')
+        return
+      }
+      setVideoFile(file)
+      setVideoPreview(videoUrl)
+    }
+
+    videoElement.onerror = () => {
+      toast.error('Error al cargar el video. Verifica que el archivo sea válido.')
+      URL.revokeObjectURL(videoUrl)
+      setVideoFile(null)
+      setVideoPreview('')
+    }
+
+    videoElement.src = videoUrl
+  }
+
+  // ─── File Upload Handler (Step 4) ────────────────────────
+  const ALLOWED_FILE_TYPES = [
+    'application/pdf',
+    'image/png',
+    'image/jpeg',
+    'image/jpg',
+    'image/gif',
+    'image/webp',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ]
+
+  const ALLOWED_EXTENSIONS = ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.docx', '.xlsx']
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setPendingFiles((prev) => [...prev, ...Array.from(e.target.files!)])
+      const validFiles: File[] = []
+      const newFiles = Array.from(e.target.files)
+
+      for (const file of newFiles) {
+        // Validate file size (max 10MB per file)
+        if (file.size > 10 * 1024 * 1024) {
+          toast.error(`El archivo "${file.name}" excede el límite de 10MB`)
+          continue
+        }
+
+        // Validate file type
+        const ext = '.' + file.name.split('.').pop()?.toLowerCase()
+        if (!ALLOWED_FILE_TYPES.includes(file.type) && !ALLOWED_EXTENSIONS.includes(ext)) {
+          toast.error(`El archivo "${file.name}" tiene un formato no permitido. Usa PDF, imágenes, DOCX o XLSX.`)
+          continue
+        }
+
+        validFiles.push(file)
+      }
+
+      setPendingFiles((prev) => [...prev, ...validFiles])
     }
   }
 
@@ -342,6 +483,33 @@ export function ProjectForm() {
     }
   }
 
+  // ─── Resolve Institution ID from Name ────────────────────
+  const resolveInstitutionId = async (name: string): Promise<string | null> => {
+    const trimmedName = name.trim()
+    if (!trimmedName) return null
+
+    // Try to find in the loaded list
+    const existing = institutions.find(
+      (inst) => inst.name.toLowerCase() === trimmedName.toLowerCase()
+    )
+    if (existing) return existing.id
+
+    // If not found, create a new one
+    try {
+      const newInst = await apiFetch<{ id: string; name: string }>('/api/ref/institutions', {
+        method: 'POST',
+        body: JSON.stringify({ name: trimmedName }),
+      })
+      // Add to local list
+      setInstitutions((prev) => [...prev, newInst])
+      return newInst.id
+    } catch {
+      toast.error('Error al crear institución')
+      return null
+    }
+  }
+
+  // ─── Submit Handler ──────────────────────────────────────
   const handleSubmit = async (submitAsDraft: boolean) => {
     if (!validateStep(1) || !validateStep(2)) {
       toast.error('Completa los campos obligatorios')
@@ -350,6 +518,14 @@ export function ProjectForm() {
 
     setIsSubmitting(true)
     try {
+      // Resolve institution ID from name
+      const institutionId = await resolveInstitutionId(formData.institutionName)
+      if (!institutionId) {
+        toast.error('Error al resolver la institución')
+        setIsSubmitting(false)
+        return
+      }
+
       const payload = {
         name: formData.name,
         pitch: formData.pitch,
@@ -361,7 +537,7 @@ export function ProjectForm() {
         leaderName: formData.leaderName,
         leaderEmail: formData.leaderEmail,
         leaderPhone: formData.leaderPhone || null,
-        institutionId: formData.institutionId,
+        institutionId,
         leaderCourse: formData.leaderCourse || null,
         leaderParallel: formData.leaderParallel || null,
         locationMatrix: formData.locationMatrix || null,
@@ -388,9 +564,56 @@ export function ProjectForm() {
         toast.success(submitAsDraft ? 'Borrador guardado' : 'Proyecto enviado correctamente')
       }
 
+      const token = localStorage.getItem('fabrica_token')
+
+      // Upload image file for new projects
+      if (projectId && imageFile && !isEditing) {
+        try {
+          const fd = new FormData()
+          fd.append('file', imageFile)
+          fd.append('projectId', projectId)
+          fd.append('category', 'image')
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: fd,
+          })
+          if (res.ok) {
+            const attachment = await res.json()
+            // Update project imageUrl
+            await apiFetch(`/api/projects/${projectId}`, {
+              method: 'PUT',
+              body: JSON.stringify({ imageUrl: attachment.filePath }),
+            })
+          }
+        } catch {
+          // Non-critical error
+        }
+      }
+
+      // Upload video pitch if provided
+      if (projectId && videoFile) {
+        try {
+          // If editing and there's an existing pitch video, delete it first
+          if (existingPitchVideo) {
+            await apiFetch(`/api/upload/${existingPitchVideo.id}`, { method: 'DELETE' })
+          }
+          const fd = new FormData()
+          fd.append('file', videoFile)
+          fd.append('projectId', projectId)
+          fd.append('category', 'pitch_video')
+          await fetch('/api/upload', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: fd,
+          })
+        } catch {
+          // Non-critical error
+        }
+      }
+
       // Upload pending files
       if (projectId && pendingFiles.length > 0) {
-        const token = localStorage.getItem('fabrica_token')
         for (const file of pendingFiles) {
           const fd = new FormData()
           fd.append('file', file)
@@ -405,7 +628,7 @@ export function ProjectForm() {
       }
 
       // If submitting (not draft), update status
-      if (!submitAsDraft && projectId && !isEditing) {
+      if (!submitAsDraft && projectId) {
         try {
           await apiFetch(`/api/projects/${projectId}/status`, {
             method: 'PATCH',
@@ -413,15 +636,6 @@ export function ProjectForm() {
           })
         } catch {
           // Non-critical, project is created
-        }
-      } else if (!submitAsDraft && isEditing && projectId) {
-        try {
-          await apiFetch(`/api/projects/${projectId}/status`, {
-            method: 'PATCH',
-            body: JSON.stringify({ status: 'SUBMITTED' }),
-          })
-        } catch {
-          // Non-critical
         }
       }
 
@@ -479,6 +693,9 @@ export function ProjectForm() {
     setCurrentStep((prev) => Math.max(prev - 1, 1))
   }
 
+  // Get institution name for review section
+  const institutionDisplayName = formData.institutionName || institutions.find((i) => i.id === formData.institutionId)?.name || ''
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -524,17 +741,24 @@ export function ProjectForm() {
                 <h2 className="text-lg font-semibold">Información General</h2>
 
                 {/* Image Upload */}
-                <FormField label="Imagen del Proyecto">
+                <FormField
+                  label="Imagen del Proyecto"
+                  tooltip="Sube una imagen representativa de tu proyecto. Será la imagen principal que se muestra en las tarjetas y listados."
+                >
                   <div className="flex items-center gap-4">
-                    {formData.imageUrl ? (
+                    {imagePreview ? (
                       <div className="relative w-24 h-24 rounded-lg overflow-hidden border">
                         <img
-                          src={formData.imageUrl}
+                          src={imagePreview}
                           alt="Preview"
                           className="w-full h-full object-cover"
                         />
                         <button
-                          onClick={() => updateField('imageUrl', '')}
+                          onClick={() => {
+                            setImagePreview('')
+                            setImageFile(null)
+                            updateField('imageUrl', '')
+                          }}
                           className="absolute top-1 right-1 w-5 h-5 rounded-full bg-destructive text-white flex items-center justify-center"
                         >
                           <X className="h-3 w-3" />
@@ -566,7 +790,12 @@ export function ProjectForm() {
                   </div>
                 </FormField>
 
-                <FormField label="Nombre del Proyecto" required error={errors.name}>
+                <FormField
+                  label="Nombre del Proyecto"
+                  required
+                  error={errors.name}
+                  tooltip="Escribe el nombre de tu proyecto. Debe ser claro, memorable y reflejar la esencia de tu idea."
+                >
                   <Input
                     value={formData.name}
                     onChange={(e) => updateField('name', e.target.value)}
@@ -575,7 +804,12 @@ export function ProjectForm() {
                   />
                 </FormField>
 
-                <FormField label="Pitch" required error={errors.pitch}>
+                <FormField
+                  label="Pitch"
+                  required
+                  error={errors.pitch}
+                  tooltip="Describe tu proyecto en 1-2 oraciones. Es tu 'elevator pitch': captura la atención explicando qué haces, para quién y por qué es importante."
+                >
                   <div>
                     <Textarea
                       value={formData.pitch}
@@ -590,7 +824,82 @@ export function ProjectForm() {
                   </div>
                 </FormField>
 
-                <FormField label="Equipo" required error={errors.team}>
+                {/* Video Pitch Upload */}
+                <FormField
+                  label="Video Pitch"
+                  error={errors.videoPitch}
+                  tooltip="Graba un video presentando tu proyecto. Máximo 1:30 minutos. Sé claro, entusiasta y enfócate en el problema que resuelves y tu solución."
+                >
+                  <div className="space-y-2">
+                    {videoPreview ? (
+                      <div className="relative rounded-lg overflow-hidden border bg-black">
+                        <video
+                          src={videoPreview}
+                          controls
+                          className="w-full max-h-48 object-contain"
+                        />
+                        <button
+                          onClick={() => {
+                            setVideoFile(null)
+                            setVideoPreview('')
+                            setVideoDurationError('')
+                            URL.revokeObjectURL(videoPreview)
+                          }}
+                          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-destructive text-white flex items-center justify-center"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ) : existingPitchVideo ? (
+                      <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                        <div className="flex items-center gap-2">
+                          <Video className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">{existingPitchVideo.fileName}</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            await handleDeleteAttachment(existingPitchVideo.id)
+                            setExistingPitchVideo(null)
+                          }}
+                          className="text-destructive hover:text-destructive h-7 w-7 p-0"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div>
+                        <input
+                          type="file"
+                          id="video-pitch"
+                          className="hidden"
+                          accept="video/*"
+                          onChange={handleVideoUpload}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => document.getElementById('video-pitch')?.click()}
+                        >
+                          <Video className="mr-2 h-4 w-4" />
+                          Subir Video Pitch
+                        </Button>
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Máximo 20MB. El video debe tener una duración máxima de 1 minuto y 30 segundos.
+                    </p>
+                  </div>
+                </FormField>
+
+                <FormField
+                  label="Equipo"
+                  required
+                  error={errors.team}
+                  tooltip="Nombre del equipo o grupo de trabajo. Si eres individual, escribe tu nombre."
+                >
                   <Input
                     value={formData.team}
                     onChange={(e) => updateField('team', e.target.value)}
@@ -599,7 +908,12 @@ export function ProjectForm() {
                   />
                 </FormField>
 
-                <FormField label="Descripción" required error={errors.description}>
+                <FormField
+                  label="Descripción"
+                  required
+                  error={errors.description}
+                  tooltip="Describe tu proyecto en detalle: problema que resuelve, solución propuesta, beneficiarios, modelo de negocio e impacto esperado."
+                >
                   <div>
                     <Textarea
                       value={formData.description}
@@ -615,7 +929,12 @@ export function ProjectForm() {
                 </FormField>
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField label="Área" required error={errors.areaId}>
+                  <FormField
+                    label="Área"
+                    required
+                    error={errors.areaId}
+                    tooltip="Selecciona el área temática que mejor se relaciona con tu proyecto."
+                  >
                     <Select value={formData.areaId} onValueChange={(v) => updateField('areaId', v)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Seleccionar área" />
@@ -630,7 +949,12 @@ export function ProjectForm() {
                     </Select>
                   </FormField>
 
-                  <FormField label="Categoría" required error={errors.categoryId}>
+                  <FormField
+                    label="Categoría"
+                    required
+                    error={errors.categoryId}
+                    tooltip="Selecciona la categoría de participación según la fase de tu proyecto."
+                  >
                     <Select value={formData.categoryId} onValueChange={(v) => updateField('categoryId', v)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Seleccionar categoría" />
@@ -661,7 +985,12 @@ export function ProjectForm() {
               >
                 <h2 className="text-lg font-semibold">Información del Líder</h2>
 
-                <FormField label="Nombre del líder" required error={errors.leaderName}>
+                <FormField
+                  label="Nombre del líder"
+                  required
+                  error={errors.leaderName}
+                  tooltip="Nombre completo de la persona que lidera el proyecto."
+                >
                   <Input
                     value={formData.leaderName}
                     onChange={(e) => updateField('leaderName', e.target.value)}
@@ -669,7 +998,12 @@ export function ProjectForm() {
                   />
                 </FormField>
 
-                <FormField label="Correo electrónico" required error={errors.leaderEmail}>
+                <FormField
+                  label="Correo electrónico"
+                  required
+                  error={errors.leaderEmail}
+                  tooltip="Correo de contacto del líder del proyecto."
+                >
                   <Input
                     type="email"
                     value={formData.leaderEmail}
@@ -678,7 +1012,10 @@ export function ProjectForm() {
                   />
                 </FormField>
 
-                <FormField label="Teléfono">
+                <FormField
+                  label="Teléfono"
+                  tooltip="Número de teléfono del líder (opcional)."
+                >
                   <Input
                     value={formData.leaderPhone}
                     onChange={(e) => updateField('leaderPhone', e.target.value)}
@@ -686,26 +1023,36 @@ export function ProjectForm() {
                   />
                 </FormField>
 
-                <FormField label="Institución" required error={errors.institutionId}>
-                  <Select
-                    value={formData.institutionId}
-                    onValueChange={(v) => updateField('institutionId', v)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar institución" />
-                    </SelectTrigger>
-                    <SelectContent>
+                <FormField
+                  label="Institución"
+                  required
+                  error={errors.institutionName}
+                  tooltip="Nombre de la institución educativa u organización a la que perteneces."
+                >
+                  <div>
+                    <Input
+                      value={formData.institutionName}
+                      onChange={(e) => {
+                        updateField('institutionName', e.target.value)
+                        // Clear institutionId since user is typing
+                        updateField('institutionId', '')
+                      }}
+                      placeholder="Nombre de la institución"
+                      list="institutions-list"
+                    />
+                    <datalist id="institutions-list">
                       {institutions.map((inst) => (
-                        <SelectItem key={inst.id} value={inst.id}>
-                          {inst.name}
-                        </SelectItem>
+                        <option key={inst.id} value={inst.name} />
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </datalist>
+                  </div>
                 </FormField>
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField label="Curso">
+                  <FormField
+                    label="Curso"
+                    tooltip="Curso, semestre o nivel académico actual (opcional)."
+                  >
                     <Input
                       value={formData.leaderCourse}
                       onChange={(e) => updateField('leaderCourse', e.target.value)}
@@ -713,7 +1060,10 @@ export function ProjectForm() {
                     />
                   </FormField>
 
-                  <FormField label="Paralelo">
+                  <FormField
+                    label="Paralelo"
+                    tooltip="Paralelo o grupo al que perteneces (opcional)."
+                  >
                     <Input
                       value={formData.leaderParallel}
                       onChange={(e) => updateField('leaderParallel', e.target.value)}
@@ -737,7 +1087,10 @@ export function ProjectForm() {
               >
                 <h2 className="text-lg font-semibold">Ubicación y Tutor</h2>
 
-                <FormField label="Matriz">
+                <FormField
+                  label="Matriz"
+                  tooltip="Ciudad o ubicación principal de la institución."
+                >
                   <Input
                     value={formData.locationMatrix}
                     onChange={(e) => updateField('locationMatrix', e.target.value)}
@@ -745,7 +1098,10 @@ export function ProjectForm() {
                   />
                 </FormField>
 
-                <FormField label="Sede">
+                <FormField
+                  label="Sede"
+                  tooltip="Sede o campus de la institución (opcional)."
+                >
                   <Input
                     value={formData.locationSede}
                     onChange={(e) => updateField('locationSede', e.target.value)}
@@ -753,7 +1109,10 @@ export function ProjectForm() {
                   />
                 </FormField>
 
-                <FormField label="Extensión">
+                <FormField
+                  label="Extensión"
+                  tooltip="Extensión o recinto donde participas (opcional)."
+                >
                   <Input
                     value={formData.locationExtension}
                     onChange={(e) => updateField('locationExtension', e.target.value)}
@@ -761,7 +1120,10 @@ export function ProjectForm() {
                   />
                 </FormField>
 
-                <FormField label="Nombre del Tutor">
+                <FormField
+                  label="Nombre del Tutor"
+                  tooltip="Nombre del docente o mentor que asesora el proyecto (opcional)."
+                >
                   <Input
                     value={formData.tutorName}
                     onChange={(e) => updateField('tutorName', e.target.value)}
@@ -785,8 +1147,10 @@ export function ProjectForm() {
                 <h2 className="text-lg font-semibold">Archivos y Revisión</h2>
 
                 {/* File Upload */}
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">Archivos Adjuntos</Label>
+                <FormField
+                  label="Archivos Adjuntos"
+                  tooltip="Sube documentos de soporte: plan de negocio, presentaciones, evidencias, prototipos, etc."
+                >
                   <div
                     className="border-2 border-dashed rounded-lg p-6 text-center hover:border-emerald-400 transition-colors cursor-pointer"
                     onClick={() => document.getElementById('file-input')?.click()}
@@ -794,7 +1158,21 @@ export function ProjectForm() {
                     onDrop={(e) => {
                       e.preventDefault()
                       if (e.dataTransfer.files) {
-                        setPendingFiles((prev) => [...prev, ...Array.from(e.dataTransfer.files)])
+                        const validFiles: File[] = []
+                        const newFiles = Array.from(e.dataTransfer.files)
+                        for (const file of newFiles) {
+                          if (file.size > 10 * 1024 * 1024) {
+                            toast.error(`El archivo "${file.name}" excede el límite de 10MB`)
+                            continue
+                          }
+                          const ext = '.' + file.name.split('.').pop()?.toLowerCase()
+                          if (!ALLOWED_FILE_TYPES.includes(file.type) && !ALLOWED_EXTENSIONS.includes(ext)) {
+                            toast.error(`El archivo "${file.name}" tiene un formato no permitido.`)
+                            continue
+                          }
+                          validFiles.push(file)
+                        }
+                        setPendingFiles((prev) => [...prev, ...validFiles])
                       }
                     }}
                   >
@@ -803,7 +1181,7 @@ export function ProjectForm() {
                       Arrastra archivos aquí o haz clic para seleccionar
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      PDF, imágenes, documentos (máx. 10MB)
+                      PDF, imágenes, DOCX, XLSX (máx. 10MB por archivo)
                     </p>
                     <input
                       id="file-input"
@@ -811,34 +1189,36 @@ export function ProjectForm() {
                       className="hidden"
                       multiple
                       onChange={handleFileSelect}
-                      accept=".pdf,.png,.jpg,.jpeg,.gif,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
+                      accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.docx,.xlsx"
                     />
                   </div>
-                </div>
+                </FormField>
 
                 {/* Existing Attachments */}
-                {existingAttachments.length > 0 && (
+                {existingAttachments.filter((a) => a.category !== 'pitch_video').length > 0 && (
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Archivos Actuales</Label>
-                    {existingAttachments.map((att) => (
-                      <div
-                        key={att.id}
-                        className="flex items-center justify-between p-2 rounded-lg border bg-muted/30"
-                      >
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">{att.fileName}</span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteAttachment(att.id)}
-                          className="text-destructive hover:text-destructive h-7 w-7 p-0"
+                    {existingAttachments
+                      .filter((a) => a.category !== 'pitch_video')
+                      .map((att) => (
+                        <div
+                          key={att.id}
+                          className="flex items-center justify-between p-2 rounded-lg border bg-muted/30"
                         >
-                          <X className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    ))}
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">{att.fileName}</span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteAttachment(att.id)}
+                            className="text-destructive hover:text-destructive h-7 w-7 p-0"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ))}
                   </div>
                 )}
 
@@ -905,9 +1285,7 @@ export function ProjectForm() {
                     </div>
                     <div>
                       <span className="text-muted-foreground">Institución:</span>{' '}
-                      <span className="font-medium">
-                        {institutions.find((i) => i.id === formData.institutionId)?.name || '—'}
-                      </span>
+                      <span className="font-medium">{institutionDisplayName || '—'}</span>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Tutor:</span>{' '}
@@ -919,6 +1297,13 @@ export function ProjectForm() {
                     <div>
                       <span className="text-sm text-muted-foreground">Pitch:</span>
                       <p className="text-sm mt-1 p-3 rounded-lg bg-muted/50">{formData.pitch}</p>
+                    </div>
+                  )}
+
+                  {videoFile && (
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">Video Pitch:</span>{' '}
+                      <span className="font-medium">{videoFile.name}</span>
                     </div>
                   )}
                 </div>

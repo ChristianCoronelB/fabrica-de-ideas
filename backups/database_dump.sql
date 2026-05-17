@@ -1,6 +1,16 @@
 -- Fábrica de Ideas Database Dump
--- Generated at: 2026-05-17T23:56:34.076Z
+-- Generated at: 2026-05-17T23:59:03.073Z
 -- ============================================
+
+-- Table: AppSetting
+DROP TABLE IF EXISTS "AppSetting";
+CREATE TABLE "AppSetting" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "key" TEXT NOT NULL,
+    "value" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
 
 -- Table: Area
 DROP TABLE IF EXISTS "Area";
@@ -344,3 +354,4 @@ CREATE UNIQUE INDEX "Institution_name_key" ON "Institution"("name");
 CREATE UNIQUE INDEX "ProjectEvaluator_projectId_evaluatorId_key" ON "ProjectEvaluator"("projectId", "evaluatorId");
 CREATE UNIQUE INDEX "Evaluation_projectId_evaluatorId_key" ON "Evaluation"("projectId", "evaluatorId");
 CREATE UNIQUE INDEX "EvaluationScore_evaluationId_criteriaId_key" ON "EvaluationScore"("evaluationId", "criteriaId");
+CREATE UNIQUE INDEX "AppSetting_key_key" ON "AppSetting"("key");

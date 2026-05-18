@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Lightbulb, Mail, Lock, User, Phone, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -29,6 +29,17 @@ export function LoginPage() {
   const [regPhone, setRegPhone] = useState('')
 
   const { login, register } = useAuthStore()
+
+  const [copyrightText, setCopyrightText] = useState('Fábrica de Ideas')
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data.copyrightText) setCopyrightText(data.copyrightText)
+      })
+      .catch(() => {})
+  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -80,7 +91,8 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 flex">
       {/* Left Panel - Decorative */}
       <motion.div
         initial={{ opacity: 0, x: -50 }}
@@ -407,6 +419,12 @@ export function LoginPage() {
           </AnimatePresence>
         </motion.div>
       </div>
+      </div>
+
+      {/* Copyright Footer */}
+      <footer className="border-t py-3 px-6 text-center text-xs text-muted-foreground shrink-0 bg-background">
+        © {new Date().getFullYear()} {copyrightText}. Todos los derechos reservados.
+      </footer>
     </div>
   )
 }

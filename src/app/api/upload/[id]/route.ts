@@ -8,6 +8,14 @@ import path from 'path'
 function getUploadsDir(): string {
   const cwd = process.cwd()
   if (cwd.includes('.next/standalone')) {
+    return path.join(cwd, '..', '..', 'data', 'uploads')
+  }
+  return path.join(cwd, 'data', 'uploads')
+}
+
+function getLegacyUploadsDir(): string {
+  const cwd = process.cwd()
+  if (cwd.includes('.next/standalone')) {
     return path.join(cwd, '..', '..', 'public', 'uploads')
   }
   return path.join(cwd, 'public', 'uploads')
@@ -41,14 +49,20 @@ export async function DELETE(
       return NextResponse.json({ error: 'No tiene permiso para eliminar este archivo' }, { status: 403 })
     }
 
-    // Remove file from filesystem
+    // Remove file from filesystem (check both data/uploads and legacy public/uploads)
     try {
-      const fullPath = path.join(getUploadsDir(), path.basename(attachment.filePath))
+      const filename = path.basename(attachment.filePath)
+      const fullPath = path.join(getUploadsDir(), filename)
+      const legacyPath = path.join(getLegacyUploadsDir(), filename)
+
       if (existsSync(fullPath)) {
         await unlink(fullPath)
-        console.log(`🗑️ File deleted from disk: ${path.basename(attachment.filePath)}`)
+        console.log(`🗑️ File deleted from disk: ${filename}`)
+      } else if (existsSync(legacyPath)) {
+        await unlink(legacyPath)
+        console.log(`🗑️ File deleted from legacy disk: ${filename}`)
       } else {
-        console.warn(`⚠️ File not found on disk: ${fullPath}`)
+        console.warn(`⚠️ File not found on disk: ${filename}`)
       }
     } catch (err) {
       console.warn('Warning: Could not delete file from disk:', err)

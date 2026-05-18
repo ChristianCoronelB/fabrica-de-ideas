@@ -48,6 +48,7 @@ import { useAuthStore } from '@/store/auth-store'
 import { useNavStore } from '@/store/nav-store'
 import { apiFetch } from '@/lib/api'
 import { StatusBadge } from '@/components/projects/status-badge'
+import { getFileUrl } from '@/lib/utils'
 
 interface Area {
   id: string
@@ -132,7 +133,7 @@ function ProjectCard({ project }: { project: ProjectListItem }) {
         {project.imageUrl ? (
           <div className="h-40 overflow-hidden">
             <img
-              src={project.imageUrl}
+              src={getFileUrl(project.imageUrl)}
               alt={project.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />

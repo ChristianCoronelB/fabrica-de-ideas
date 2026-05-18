@@ -67,6 +67,7 @@ import { useNavStore } from '@/store/nav-store'
 import { apiFetch } from '@/lib/api'
 import { StatusBadge } from '@/components/projects/status-badge'
 import { toast } from 'sonner'
+import { getFileUrl } from '@/lib/utils'
 
 interface EvaluatorUser {
   id: string
@@ -454,7 +455,7 @@ export function ProjectDetail() {
       {project.imageUrl && (
         <Card className="overflow-hidden">
           <img
-            src={project.imageUrl}
+            src={getFileUrl(project.imageUrl)}
             alt={project.name}
             className="w-full max-h-[300px] object-cover"
           />
@@ -717,7 +718,7 @@ export function ProjectDetail() {
             {project.attachments.filter(a => a.category === 'pitch_video').map((attachment) => (
               <div key={attachment.id} className="space-y-3">
                 <video
-                  src={attachment.filePath}
+                  src={getFileUrl(attachment.filePath)}
                   controls
                   className="w-full max-h-[400px] rounded-lg object-contain bg-black"
                 />
@@ -799,7 +800,7 @@ export function ProjectDetail() {
                       </div>
                       <div className="flex items-center gap-2">
                         <a
-                          href={attachment.filePath}
+                          href={getFileUrl(attachment.filePath)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-muted"

@@ -33,15 +33,13 @@ const ALLOWED_TYPES = {
 }
 
 function getUploadsDir(): string {
-  // In production standalone mode, the cwd is the standalone output directory
-  // We need to use the actual project root where public/uploads lives
+  // Store files in data/uploads/ (outside public/) so they persist across rebuilds
+  // and are accessible at runtime in standalone mode
   const cwd = process.cwd()
-  // Check if we're in standalone mode (.next/standalone)
   if (cwd.includes('.next/standalone')) {
-    // Go up to the project root
-    return path.join(cwd, '..', '..', 'public', 'uploads')
+    return path.join(cwd, '..', '..', 'data', 'uploads')
   }
-  return path.join(cwd, 'public', 'uploads')
+  return path.join(cwd, 'data', 'uploads')
 }
 
 async function ensureUploadsDir(): Promise<string> {
@@ -164,12 +162,15 @@ export async function POST(request: NextRequest) {
 
     const fileSize = (await import('fs/promises')).stat(filePath).then(s => s.size).catch(() => file.size)
 
+    // Use /api/files/ path so files are served via API route (works in standalone mode)
+    const fileUrlPath = `/api/files/${uniqueName}`
+
     // Create attachment record
     const attachment = await db.attachment.create({
       data: {
         projectId,
         fileName: file.name,
-        filePath: `/uploads/${uniqueName}`,
+        filePath: fileUrlPath,
         fileType: file.type,
         fileSize: file.size,
         category: category || null,
@@ -180,7 +181,7 @@ export async function POST(request: NextRequest) {
     if (category === 'image') {
       await db.project.update({
         where: { id: projectId },
-        data: { imageUrl: `/uploads/${uniqueName}` },
+        data: { imageUrl: fileUrlPath },
       })
     }
 

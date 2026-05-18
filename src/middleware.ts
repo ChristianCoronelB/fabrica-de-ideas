@@ -5,8 +5,8 @@ import { verifyToken, extractTokenFromHeader } from '@/lib/auth'
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Only protect API routes (except auth routes)
-  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth/') && !pathname.startsWith('/api/settings') && !pathname.startsWith('/api/download')) {
+  // Only protect API routes (except auth, settings, download, and file serving routes)
+  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth/') && !pathname.startsWith('/api/settings') && !pathname.startsWith('/api/download') && !pathname.startsWith('/api/files/')) {
     const authHeader = request.headers.get('Authorization')
     const token = extractTokenFromHeader(authHeader)
 

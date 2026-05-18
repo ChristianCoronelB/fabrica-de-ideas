@@ -34,6 +34,7 @@ import { useAuthStore } from '@/store/auth-store'
 import { useNavStore } from '@/store/nav-store'
 import { apiFetch } from '@/lib/api'
 import { toast } from 'sonner'
+import { getFileUrl } from '@/lib/utils'
 
 interface Area {
   id: string
@@ -277,7 +278,7 @@ export function ProjectForm() {
           tutorName: project.tutorName || '',
         })
         if (project.imageUrl) {
-          setImagePreview(project.imageUrl)
+          setImagePreview(getFileUrl(project.imageUrl))
         }
         setExistingAttachments(project.attachments || [])
 
@@ -395,7 +396,7 @@ export function ProjectForm() {
         const result = await uploadFile(file, editId, 'image')
         if (result) {
           updateField('imageUrl', result.filePath)
-          setImagePreview(result.filePath)
+          setImagePreview(getFileUrl(result.filePath))
           toast.success('Imagen subida correctamente')
         }
       } catch {

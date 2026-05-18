@@ -114,21 +114,16 @@ function getSliderTrackClass(score: number, maxScore: number): string {
   return '[&_[data-slot=slider-range]]:bg-red-500 [&_[data-slot=slider-thumb]]:border-red-500'
 }
 
-function isSpecialCategory(categoryName: string | undefined): boolean {
-  return categoryName === 'Emprendimiento Escolar' || categoryName === 'Poster de Emprendimiento'
-}
 
 /* ── Criterion Card ────────────────────────────────── */
 
 function CriterionCard({
   scoreEntry,
-  isOptional,
   isDisabled,
   onScoreChange,
   onObservationChange,
 }: {
   scoreEntry: EvaluationScore
-  isOptional: boolean
   isDisabled: boolean
   onScoreChange: (criteriaId: string, score: number) => void
   onObservationChange: (criteriaId: string, observation: string) => void
@@ -137,7 +132,7 @@ function CriterionCard({
   const pct = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0
 
   return (
-    <Card className={`relative ${isOptional ? 'opacity-60' : ''}`}>
+    <Card className="relative">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
@@ -173,11 +168,7 @@ function CriterionCard({
             <Badge variant="secondary" className="text-[10px]">
               {maxScore} pts
             </Badge>
-            {isOptional && (
-              <Badge className="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 whitespace-nowrap">
-                No obligatorio
-              </Badge>
-            )}
+
           </div>
         </div>
       </CardHeader>
@@ -238,12 +229,10 @@ function SummaryPanel({
   scores,
   totalScore,
   maxPossible,
-  isOptionalCriteria,
 }: {
   scores: EvaluationScore[]
   totalScore: number
   maxPossible: number
-  isOptionalCriteria: Record<string, boolean>
 }) {
   return (
     <div className="space-y-4">
@@ -257,10 +246,9 @@ function SummaryPanel({
       {/* Criteria Breakdown */}
       <div className="space-y-3">
         {scores.map((s) => {
-          const optional = isOptionalCriteria[s.criteriaId]
           const pct = s.maxScore > 0 ? Math.round((s.score / s.maxScore) * 100) : 0
           return (
-            <div key={s.criteriaId} className={`space-y-1 ${optional ? 'opacity-50' : ''}`}>
+            <div key={s.criteriaId} className="space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium truncate pr-2">{s.criteria.name}</span>
                 <span className={`text-xs font-bold tabular-nums shrink-0 ${getScoreColorClass(s.score, s.maxScore)}`}>
@@ -337,19 +325,13 @@ export function EvaluationDetail() {
 
   /* ── Computed ──────────────────────────────────── */
 
-  const isSpecial = isSpecialCategory(evaluation?.project?.category?.name)
   const isDisabled = evaluation ? !evaluation.isDraft && user?.role !== 'ADMIN' : true
 
-  const isOptionalCriteria: Record<string, boolean> = {}
   let maxPossible = 0
 
   if (evaluation) {
     for (const s of evaluation.scores) {
-      const optional = isSpecial && s.criteria.name === 'Viabilidad del Negocio'
-      isOptionalCriteria[s.criteriaId] = optional
-      if (!optional) {
-        maxPossible += s.maxScore
-      }
+      maxPossible += s.maxScore
     }
   }
 
@@ -359,9 +341,7 @@ export function EvaluationDetail() {
     for (const s of evaluation.scores) {
       const localScore = localScores[s.criteriaId]
       const scoreValue = localScore ? localScore.score : s.score
-      if (!isOptionalCriteria[s.criteriaId]) {
-        calculatedTotal += scoreValue
-      }
+      calculatedTotal += scoreValue
     }
   }
 
@@ -453,9 +433,9 @@ export function EvaluationDetail() {
   const handleSubmit = async () => {
     if (!evaluation) return
 
-    // Check that non-optional criteria have been scored
+    // Check that all criteria have been scored
     const unscored = evaluation.scores.filter(
-      (s) => !isOptionalCriteria[s.criteriaId] && (localScores[s.criteriaId]?.score ?? s.score) === 0
+      (s) => (localScores[s.criteriaId]?.score ?? s.score) === 0
     )
     if (unscored.length > 0) {
       toast.warning('Criterios sin evaluar', {
@@ -577,7 +557,6 @@ export function EvaluationDetail() {
                       score: localScores[scoreEntry.criteriaId]?.score ?? scoreEntry.score,
                       observation: localScores[scoreEntry.criteriaId]?.observation ?? scoreEntry.observation,
                     }}
-                    isOptional={isOptionalCriteria[scoreEntry.criteriaId]}
                     isDisabled={isDisabled}
                     onScoreChange={handleScoreChange}
                     onObservationChange={handleObservationChange}
@@ -628,7 +607,6 @@ export function EvaluationDetail() {
                   }))}
                   totalScore={calculatedTotal}
                   maxPossible={maxPossible}
-                  isOptionalCriteria={isOptionalCriteria}
                 />
               </CardContent>
             </Card>
@@ -650,7 +628,6 @@ export function EvaluationDetail() {
               }))}
               totalScore={calculatedTotal}
               maxPossible={maxPossible}
-              isOptionalCriteria={isOptionalCriteria}
             />
           </CardContent>
         </Card>

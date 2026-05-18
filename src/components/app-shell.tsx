@@ -1,6 +1,6 @@
 'use client'
 
-import React, { Suspense } from 'react'
+import React, { Suspense, useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { useTheme } from 'next-themes'
 import {
@@ -415,6 +415,17 @@ function TopBar() {
 }
 
 export function AppShell() {
+  const [copyrightText, setCopyrightText] = useState('Fábrica de Ideas')
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data.copyrightText) setCopyrightText(data.copyrightText)
+      })
+      .catch(() => {})
+  }, [])
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -428,7 +439,7 @@ export function AppShell() {
           </div>
         </div>
         <footer className="border-t py-3 px-6 text-center text-xs text-muted-foreground shrink-0">
-          © {new Date().getFullYear()} Fábrica de Ideas. Todos los derechos reservados.
+          © {new Date().getFullYear()} {copyrightText}. Todos los derechos reservados.
         </footer>
       </SidebarInset>
       <AutoBackup />

@@ -46,15 +46,18 @@ export async function PATCH(
       include: { criteria: true },
     })
 
-    const isSpecialCategory =
-      evaluation.project.category?.name === 'Emprendimiento Escolar' ||
-      evaluation.project.category?.name === 'Poster de Emprendimiento'
+    // Validate that ALL criteria have been scored (score > 0)
+    const unscored = scores.filter((s) => s.score === 0)
+    if (unscored.length > 0) {
+      const criteriaNames = unscored.map((s) => s.criteria.name).join(', ')
+      return NextResponse.json(
+        { error: `Faltan criterios por evaluar: ${criteriaNames}` },
+        { status: 400 }
+      )
+    }
 
     let totalScore = 0
     for (const s of scores) {
-      if (isSpecialCategory && s.criteria.name === 'Viabilidad del Negocio') {
-        continue
-      }
       totalScore += s.score
     }
 

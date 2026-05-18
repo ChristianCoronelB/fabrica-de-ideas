@@ -126,22 +126,8 @@ export async function PUT(
       include: { criteria: true },
     })
 
-    // Get the project's category to check for special rules
-    const projectWithCategory = await db.project.findUnique({
-      where: { id: evaluation.projectId },
-      include: { category: true },
-    })
-
-    const isSpecialCategory =
-      projectWithCategory?.category?.name === 'Emprendimiento Escolar' ||
-      projectWithCategory?.category?.name === 'Poster de Emprendimiento'
-
     let totalScore = 0
     for (const s of updatedScores) {
-      // For special categories, "Viabilidad del Negocio" criterion is not counted
-      if (isSpecialCategory && s.criteria.name === 'Viabilidad del Negocio') {
-        continue
-      }
       totalScore += s.score
     }
 

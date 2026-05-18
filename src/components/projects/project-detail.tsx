@@ -24,6 +24,7 @@ import {
   Loader2,
   Paperclip,
   Download,
+  Video,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -693,89 +694,127 @@ export function ProjectDetail() {
         </Card>
       )}
 
-      {/* Attachments Section */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
+      {/* Video Pitch Section */}
+      {project.attachments.filter(a => a.category === 'pitch_video').length > 0 && (
+        <Card>
+          <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Paperclip className="h-5 w-5 text-emerald-500" />
-              Archivos Adjuntos
+              <Video className="h-5 w-5 text-emerald-500" />
+              Video Pitch
             </CardTitle>
-            {(isOwner || isAdminUser) && (
-              <div>
-                <input
-                  type="file"
-                  id="file-upload"
-                  className="hidden"
-                  multiple
-                  onChange={handleFileUpload}
-                  accept=".pdf,.png,.jpg,.jpeg,.gif,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
+          </CardHeader>
+          <CardContent>
+            {project.attachments.filter(a => a.category === 'pitch_video').map((attachment) => (
+              <div key={attachment.id} className="space-y-3">
+                <video
+                  src={attachment.filePath}
+                  controls
+                  className="w-full max-h-[400px] rounded-lg object-contain bg-black"
                 />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={isUploading}
-                  onClick={() => document.getElementById('file-upload')?.click()}
-                >
-                  {isUploading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Upload className="mr-2 h-4 w-4" />
-                  )}
-                  Subir Archivo
-                </Button>
+                {(isOwner || isAdminUser) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteAttachment(attachment.id)}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" /> Eliminar video
+                  </Button>
+                )}
               </div>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {project.attachments.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              No hay archivos adjuntos
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {project.attachments.map((attachment) => (
-                <div
-                  key={attachment.id}
-                  className="flex items-center justify-between p-3 rounded-lg border bg-muted/30"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">{getFileIcon(attachment.fileType)}</span>
-                    <div>
-                      <p className="text-sm font-medium">{attachment.fileName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatFileSize(attachment.fileSize)} •{' '}
-                        {new Date(attachment.createdAt).toLocaleDateString('es-ES')}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <a
-                      href={attachment.filePath}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-muted"
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Attachments Section */}
+      {(() => {
+        const otherAttachments = project.attachments.filter(a => a.category !== 'pitch_video')
+        return (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Paperclip className="h-5 w-5 text-emerald-500" />
+                  Archivos Adjuntos
+                </CardTitle>
+                {(isOwner || isAdminUser) && (
+                  <div>
+                    <input
+                      type="file"
+                      id="file-upload"
+                      className="hidden"
+                      multiple
+                      onChange={handleFileUpload}
+                      accept=".pdf,.png,.jpg,.jpeg,.gif,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={isUploading}
+                      onClick={() => document.getElementById('file-upload')?.click()}
                     >
-                      <Download className="h-4 w-4" />
-                    </a>
-                    {(isOwner || isAdminUser) && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteAttachment(attachment.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
+                      {isUploading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Upload className="mr-2 h-4 w-4" />
+                      )}
+                      Subir Archivo
+                    </Button>
                   </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {otherAttachments.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No hay archivos adjuntos
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {otherAttachments.map((attachment) => (
+                    <div
+                      key={attachment.id}
+                      className="flex items-center justify-between p-3 rounded-lg border bg-muted/30"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">{getFileIcon(attachment.fileType)}</span>
+                        <div>
+                          <p className="text-sm font-medium">{attachment.fileName}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatFileSize(attachment.fileSize)} •{' '}
+                            {new Date(attachment.createdAt).toLocaleDateString('es-ES')}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={attachment.filePath}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-muted"
+                        >
+                          <Download className="h-4 w-4" />
+                        </a>
+                        {(isOwner || isAdminUser) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteAttachment(attachment.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              )}
+            </CardContent>
+          </Card>
+        )
+      })()}
 
       {/* Assign Evaluator Dialog */}
       <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>

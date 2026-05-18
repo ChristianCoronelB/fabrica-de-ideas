@@ -384,7 +384,7 @@ export function ProjectForm() {
   }
 
   // ─── Video Pitch Upload Handler ──────────────────────────
-  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -407,7 +407,7 @@ export function ProjectForm() {
     const videoElement = document.createElement('video')
     videoElement.preload = 'metadata'
 
-    videoElement.onloadedmetadata = () => {
+    videoElement.onloadedmetadata = async () => {
       if (videoElement.duration > 90) {
         setVideoDurationError('El video debe tener una duración máxima de 1 minuto y 30 segundos')
         URL.revokeObjectURL(videoUrl)
@@ -415,8 +415,40 @@ export function ProjectForm() {
         setVideoPreview('')
         return
       }
+
       setVideoFile(file)
       setVideoPreview(videoUrl)
+
+      // If editing, upload immediately
+      if (isEditing && editId) {
+        try {
+          // Delete existing pitch video if any
+          if (existingPitchVideo) {
+            await apiFetch(`/api/upload/${existingPitchVideo.id}`, { method: 'DELETE' })
+            setExistingPitchVideo(null)
+          }
+
+          const fd = new FormData()
+          fd.append('file', file)
+          fd.append('projectId', editId)
+          fd.append('category', 'pitch_video')
+          const token = localStorage.getItem('fabrica_token')
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: fd,
+          })
+          if (res.ok) {
+            const attachment = await res.json()
+            setExistingPitchVideo(attachment)
+            toast.success('Video subido correctamente')
+          } else {
+            toast.error('Error al subir el video')
+          }
+        } catch {
+          toast.error('Error al subir el video')
+        }
+      }
     }
 
     videoElement.onerror = () => {
@@ -591,24 +623,23 @@ export function ProjectForm() {
         }
       }
 
-      // Upload video pitch if provided
-      if (projectId && videoFile) {
+      // Upload video pitch if provided (only for new projects, editing uploads immediately)
+      if (projectId && videoFile && !isEditing) {
         try {
-          // If editing and there's an existing pitch video, delete it first
-          if (existingPitchVideo) {
-            await apiFetch(`/api/upload/${existingPitchVideo.id}`, { method: 'DELETE' })
-          }
           const fd = new FormData()
           fd.append('file', videoFile)
           fd.append('projectId', projectId)
           fd.append('category', 'pitch_video')
-          await fetch('/api/upload', {
+          const res = await fetch('/api/upload', {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}` },
             body: fd,
           })
+          if (!res.ok) {
+            toast.error('Error al subir el video pitch')
+          }
         } catch {
-          // Non-critical error
+          toast.error('Error al subir el video pitch')
         }
       }
 

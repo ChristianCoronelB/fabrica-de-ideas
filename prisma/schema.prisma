@@ -205,3 +205,12 @@ model Notification {
   type      String   @default("info") // info, success, warning, error
   createdAt DateTime @default(now())
 }
+
+// ─── App Settings ──────────────────────────────────────
+model AppSetting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

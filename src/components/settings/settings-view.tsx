@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useTheme } from 'next-themes'
 import {
@@ -56,6 +56,24 @@ export function SettingsView() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [savingPassword, setSavingPassword] = useState(false)
 
+  // App settings (admin only)
+  const [organizationName, setOrganizationName] = useState('Fábrica de Ideas')
+  const [copyrightText, setCopyrightText] = useState('Fábrica de Ideas')
+  const [savingAppSettings, setSavingAppSettings] = useState(false)
+
+  // Load app settings for admins
+  useEffect(() => {
+    if (user?.role === 'ADMIN') {
+      fetch('/api/settings')
+        .then(res => res.json())
+        .then(data => {
+          if (data.organizationName) setOrganizationName(data.organizationName)
+          if (data.copyrightText) setCopyrightText(data.copyrightText)
+        })
+        .catch(() => {})
+    }
+  }, [user?.role])
+
   const handleSaveProfile = async () => {
     if (!profileName.trim()) {
       toast.error('El nombre es obligatorio')
@@ -108,6 +126,26 @@ export function SettingsView() {
       toast.error(err instanceof Error ? err.message : 'Error al cambiar contraseña')
     } finally {
       setSavingPassword(false)
+    }
+  }
+
+  const handleSaveAppSettings = async () => {
+    try {
+      setSavingAppSettings(true)
+      const token = localStorage.getItem('fabrica_token')
+      await fetch('/api/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ organizationName, copyrightText }),
+      })
+      toast.success('Configuración de la aplicación guardada')
+    } catch (err) {
+      toast.error('Error al guardar configuración')
+    } finally {
+      setSavingAppSettings(false)
     }
   }
 
@@ -330,6 +368,57 @@ export function SettingsView() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Application Section (ADMIN only) */}
+      {user?.role === 'ADMIN' && (
+        <motion.div variants={itemVariants}>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Lightbulb className="h-5 w-5 text-emerald-600" />
+                <CardTitle>Aplicación</CardTitle>
+              </div>
+              <CardDescription>Configuración general de la plataforma</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="org-name">Nombre de la Organización</Label>
+                  <Input
+                    id="org-name"
+                    value={organizationName}
+                    onChange={(e) => setOrganizationName(e.target.value)}
+                    placeholder="Nombre de la organización"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Este nombre se muestra en el sidebar y encabezados de la aplicación
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="copyright-text">Texto del Copyright</Label>
+                  <Input
+                    id="copyright-text"
+                    value={copyrightText}
+                    onChange={(e) => setCopyrightText(e.target.value)}
+                    placeholder="Texto para el copyright del footer"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Texto que aparece en el pie de página. Se mostrará como: © {new Date().getFullYear()} [texto]. Todos los derechos reservados.
+                  </p>
+                </div>
+              </div>
+              <Button onClick={handleSaveAppSettings} disabled={savingAppSettings}>
+                {savingAppSettings ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                Guardar Configuración
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* About Section */}
       <motion.div variants={itemVariants}>

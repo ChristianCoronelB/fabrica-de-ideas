@@ -729,3 +729,172 @@ Stage Summary:
 - Restore is idempotent - safe to run on every startup without side effects
 - Auto-backup component only runs when authenticated (token check in localStorage)
 - API endpoint behind middleware auth (requires valid JWT)
+
+## Task 1: Fix Video Pitch Storage and Playback
+**Completed:** 2026-03-04
+
+### What was done:
+
+#### 1. Modified project-detail.tsx — Embedded Video Player for Pitch Videos
+- Added `Video` icon import from lucide-react
+- Separated `pitch_video` attachments from regular attachments in the Attachments section
+- New "Video Pitch" card rendered ABOVE the regular attachments card when pitch videos exist:
+  - Uses native `<video>` element with `controls`, `object-contain`, and `bg-black` styling
+  - Max height of 400px for the video player
+  - Delete button ("Eliminar video") for owners/admins with destructive styling
+- Regular "Archivos Adjuntos" card now filters out `pitch_video` attachments using `otherAttachments`
+- Used IIFE pattern `(() => { ... })()` to compute `otherAttachments` inline since JSX doesn't support `const` at the top level of JSX expressions
+
+#### 2. Modified project-form.tsx — Immediate Video Upload on Edit
+- Changed `handleVideoUpload` from sync to `async` function
+- Added immediate upload logic inside `onloadedmetadata` callback (now async):
+  - When `isEditing && editId`, the video is uploaded immediately via POST /api/upload with category `pitch_video`
+  - If `existingPitchVideo` exists, it is deleted first via DELETE /api/upload/[id]
+  - On success, `existingPitchVideo` state is updated with the returned attachment
+  - Error toasts shown on upload failure
+  - When NOT editing, behavior remains the same (store File object for later upload on submit)
+- Updated `handleSubmit` video upload section:
+  - Added `!isEditing` condition: video only uploaded on submit for NEW projects
+  - For editing projects, video is already uploaded immediately on selection, so no duplicate upload
+  - Added proper error handling with toast messages instead of silent catch
+  - Removed the existingPitchVideo deletion from submit (already handled in handleVideoUpload)
+
+### Key Decisions:
+- Used IIFE in JSX for filtering `otherAttachments` to avoid extracting a separate component or using a computed variable outside the render
+- Video upload on edit mirrors the existing image upload-on-edit pattern for consistency
+- Immediate upload on edit prevents data loss if form submission fails
+- Video player uses native HTML5 `<video>` with controls — no external player library needed
+- `onloadedmetadata` callback made async to support await calls for upload and delete operations
+- All existing functionality preserved — only video pitch behavior changed
+- Both files pass `bun run lint` with zero errors
+
+## Task 3 (Agent): Make ALL Evaluation Criteria Mandatory
+**Completed:** 2026-05-13
+
+### What was done:
+
+Removed the special category logic ("Emprendimiento Escolar" / "Poster de Emprendimiento") that previously made "Viabilidad del Negocio" criterion optional. All evaluation criteria are now mandatory regardless of category.
+
+#### 1. Modified evaluation-detail.tsx (src/components/evaluations/evaluation-detail.tsx)
+- Removed `isSpecialCategory()` helper function entirely
+- Removed `isSpecial` computed variable and `isOptionalCriteria` record
+- Removed `isOptional` prop from `CriterionCard` component
+- Removed "No obligatorio" badge rendering in CriterionCard
+- Removed `opacity-60` conditional class on CriterionCard Card
+- Removed `isOptionalCriteria` prop from `SummaryPanel` component
+- Removed `optional` variable and `opacity-50` conditional class in SummaryPanel breakdown
+- Simplified `maxPossible` calculation to sum all criteria maxScore values (no exclusion)
+- Simplified `calculatedTotal` to sum all criteria scores (no exclusion)
+- Updated submit validation to check ALL criteria instead of non-optional only
+- Removed `isOptional` prop from CriterionCard usage in render
+- Removed `isOptionalCriteria` prop from SummaryPanel usage (both desktop and mobile)
+
+#### 2. Modified evaluations/[id]/route.ts (src/app/api/evaluations/[id]/route.ts)
+- Removed project category lookup (`db.project.findUnique` with category include)
+- Removed `isSpecialCategory` check
+- Simplified totalScore calculation in PUT handler to sum all scores without exclusion
+
+#### 3. Modified evaluations/[id]/submit/route.ts (src/app/api/evaluations/[id]/submit/route.ts)
+- Removed `isSpecialCategory` check
+- Added server-side validation: ALL criteria must have score > 0 before submission
+- Returns 400 error with list of unscored criteria names if validation fails
+- Simplified totalScore calculation to sum all scores without exclusion
+
+### Key Decisions:
+- Total score is now always out of 100 (sum of all criteria weights) regardless of category
+- All criteria are mandatory - no exceptions for any category
+- Server-side validation added to submit endpoint prevents submitting incomplete evaluations
+- Existing UI/UX preserved except for removed optional logic
+- All changes pass `bun run lint` with zero errors
+
+## Task 2-Agent: Make Copyright Configurable from Settings
+**Completed:** 2026-05-13
+
+### What was done:
+
+#### 1. Added AppSetting model to Prisma schema (prisma/schema.prisma)
+- New `AppSetting` model with id (cuid), key (unique), value, createdAt, updatedAt
+- Ran `bun run db:push` to apply schema changes
+- Ran `npx prisma generate` to regenerate Prisma client
+
+#### 2. Created /api/settings endpoint (src/app/api/settings/route.ts)
+- **GET /api/settings** - Public endpoint returning all app settings as key-value map
+  - Returns defaults if DB fails (graceful degradation)
+  - Default settings: `copyrightText: 'Fábrica de Ideas'`, `organizationName: 'Fábrica de Ideas'`
+- **PUT /api/settings** - Admin-only endpoint to update app settings
+  - Manually verifies JWT token (since /api/settings bypasses middleware auth for public GET)
+  - Uses `verifyToken` + `extractTokenFromHeader` from `@/lib/auth` directly
+  - Checks `payload.role === 'ADMIN'` for authorization
+  - Uses Prisma `upsert` for each key-value pair (create if not exists, update if exists)
+  - Returns updated settings map after save
+
+#### 3. Updated Settings View (src/components/settings/settings-view.tsx)
+- Added `useEffect` import
+- Added state variables: `organizationName`, `copyrightText`, `savingAppSettings`
+- Added `useEffect` to load app settings from `/api/settings` on mount (admin only)
+- Added `handleSaveAppSettings` function that sends PUT to `/api/settings` with Authorization header from localStorage
+- Added "Aplicación" section (ADMIN only) between Security and About sections:
+  - Card with Lightbulb icon and "Aplicación" title
+  - "Nombre de la Organización" input with helper text
+  - "Texto del Copyright" input with helper text showing format preview: `© {year} [texto]. Todos los derechos reservados.`
+  - "Guardar Configuración" button with loading spinner
+  - Only visible when `user?.role === 'ADMIN'`
+
+#### 4. Updated App Shell footer (src/components/app-shell.tsx)
+- Added `useState` and `useEffect` imports
+- Added `copyrightText` state with default "Fábrica de Ideas"
+- Added `useEffect` to fetch `/api/settings` on mount and update copyrightText
+- Updated footer from hardcoded `Fábrica de Ideas` to dynamic `{copyrightText}`
+
+### Key Decisions:
+- PUT /api/settings manually verifies JWT since the middleware skips auth for /api/settings (needed for public GET). This avoids having to split the endpoint into two routes.
+- Settings use upsert pattern so any key can be created or updated in a single operation
+- Footer fetches settings on mount so copyright updates immediately after page load
+- Admin-only UI section uses `user?.role === 'ADMIN'` check consistent with other admin features
+- All components pass `bun run lint` with zero errors
+---
+Task ID: 1
+Agent: Main
+Task: Fix video pitch storage and playback
+
+Work Log:
+- Modified project-detail.tsx: Added dedicated "Video Pitch" card with embedded <video> player for pitch_video attachments, separated from regular attachments
+- Modified project-form.tsx: Changed handleVideoUpload to async, added immediate upload when editing (same pattern as image upload), improved error handling for video upload on submit
+
+Stage Summary:
+- Pitch videos now display as embedded HTML5 video players in project detail view
+- Videos upload immediately when editing a project (not just on submit)
+- Video upload errors now show toast messages instead of being silently ignored
+---
+Task ID: 2
+Agent: Main
+Task: Make copyright configurable from Settings
+
+Work Log:
+- Added AppSetting model to prisma/schema.prisma with key/value fields
+- Created /api/settings GET/PUT endpoint (GET is public, PUT requires ADMIN auth)
+- Updated settings-view.tsx: Added "Aplicación" section for admins with organizationName and copyrightText fields
+- Updated app-shell.tsx: Footer now fetches copyright from /api/settings and displays dynamically
+
+Stage Summary:
+- Copyright text is now configurable from Settings > Aplicación (admin only)
+- Footer dynamically loads and displays the configured copyright text
+- Default values fall back to "Fábrica de Ideas"
+---
+Task ID: 3
+Agent: Main
+Task: Make all evaluation criteria mandatory
+
+Work Log:
+- Removed isSpecialCategory() function from evaluation-detail.tsx
+- Removed isOptional prop from CriterionCard component
+- Removed isOptionalCriteria prop from SummaryPanel component
+- Updated submit validation to check ALL criteria (not just non-optional)
+- Removed special category logic from evaluations/[id]/route.ts PUT handler
+- Removed special category logic from evaluations/[id]/submit/route.ts
+- Added server-side validation in submit endpoint: all criteria must have score > 0
+
+Stage Summary:
+- All evaluation criteria are now mandatory regardless of category
+- Total score is always out of 100 (sum of all criteria weights)
+- Both client-side and server-side validation enforce all criteria must be scored

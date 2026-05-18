@@ -1,5 +1,5 @@
 -- Fábrica de Ideas Database Dump
--- Generated at: 2026-05-18T05:41:37.874Z
+-- Generated at: 2026-05-18T05:44:37.644Z
 -- ============================================
 
 -- Table: AppSetting
@@ -81,6 +81,7 @@ INSERT INTO "AuditLog" ("id", "userId", "projectId", "action", "details", "creat
 INSERT INTO "AuditLog" ("id", "userId", "projectId", "action", "details", "createdAt") VALUES ('cmpaq27gb000hoiwswvloyrj0', 'cmpanacyw000koixl6443hc5a', 'cmpanacyz000voixlg4nd33ml', 'FILE_UPLOADED', 'Archivo "1000025332.jpg" subido al proyecto (image)', 1779079603260);
 INSERT INTO "AuditLog" ("id", "userId", "projectId", "action", "details", "createdAt") VALUES ('cmpaq2mxe000joiwsqkg7krq7', 'cmpanacyw000koixl6443hc5a', 'cmpanacyz000voixlg4nd33ml', 'PROJECT_UPDATED', 'Proyecto "EcoTurismo360" actualizado', 1779079623315);
 INSERT INTO "AuditLog" ("id", "userId", "projectId", "action", "details", "createdAt") VALUES ('cmparxd1q000uoiwsgh558zer', 'cmpanacyw000noixl67swu5pd', 'cmpanacyz000toixljrrv94nj', 'EVALUATION_STARTED', 'Evaluación iniciada para el proyecto "FinVerde"', 1779082736462);
+INSERT INTO "AuditLog" ("id", "userId", "projectId", "action", "details", "createdAt") VALUES ('cmpas1ne90015oiwsvaj0q18p', 'cmpanacyx000poixl54djol3h', 'cmpanacyz000uoixlwvjw6gpg', 'EVALUATION_STARTED', 'Evaluación iniciada para el proyecto "AgroSense"', 1779082936497);
 
 -- Table: Category
 DROP TABLE IF EXISTS "Category";

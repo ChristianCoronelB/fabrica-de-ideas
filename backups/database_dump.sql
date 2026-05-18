@@ -1,5 +1,5 @@
 -- Fábrica de Ideas Database Dump
--- Generated at: 2026-05-18T02:22:02.384Z
+-- Generated at: 2026-05-18T02:25:02.346Z
 -- ============================================
 
 -- Table: AppSetting

@@ -1,5 +1,5 @@
 -- Fábrica de Ideas Database Dump
--- Generated at: 2026-05-18T00:17:04.526Z
+-- Generated at: 2026-05-18T00:18:07.999Z
 -- ============================================
 
 -- Table: AppSetting
@@ -12,8 +12,8 @@ CREATE TABLE "AppSetting" (
     "updatedAt" DATETIME NOT NULL
 );
 
-INSERT INTO "AppSetting" ("id", "key", "value", "createdAt", "updatedAt") VALUES ('cmpag7tlh0000oiymv0qyiwtw', 'copyrightText', 'Fábrica de Ideas', 1779063069077, 1779063075140);
-INSERT INTO "AppSetting" ("id", "key", "value", "createdAt", "updatedAt") VALUES ('cmpag7tlj0001oiymkn8tnnc9', 'organizationName', 'Fábrica de Ideas', 1779063069079, 1779063075141);
+INSERT INTO "AppSetting" ("id", "key", "value", "createdAt", "updatedAt") VALUES ('cmpag7tlh0000oiymv0qyiwtw', 'copyrightText', 'Fábrica de Ideas', 1779063069077, 1779063482758);
+INSERT INTO "AppSetting" ("id", "key", "value", "createdAt", "updatedAt") VALUES ('cmpag7tlj0001oiymkn8tnnc9', 'organizationName', 'Fábrica de Ideas:', 1779063069079, 1779063482757);
 
 -- Table: Area
 DROP TABLE IF EXISTS "Area";
@@ -49,7 +49,6 @@ CREATE TABLE "Attachment" (
 INSERT INTO "Attachment" ("id", "projectId", "fileName", "filePath", "fileType", "fileSize", "category", "createdAt") VALUES ('cmp1wld3a0006ojkjv12qm67c', 'cmp1veqi20015ojvqpgvw810b', 'Compra de Materia Prima.pdf', '/uploads/1778546379139-crktoan.pdf', 'application/pdf', 64820, 'evidence', 1778546379142);
 INSERT INTO "Attachment" ("id", "projectId", "fileName", "filePath", "fileType", "fileSize", "category", "createdAt") VALUES ('cmp1wuih7000pojkjfbhko8xq', 'cmp1wuhhe000lojkjzd3x35ub', 'IASERVICIOEPS.pdf', '/uploads/1778546806025-8juhdia.pdf', 'application/pdf', 26710, 'evidence', 1778546806027);
 INSERT INTO "Attachment" ("id", "projectId", "fileName", "filePath", "fileType", "fileSize", "category", "createdAt") VALUES ('cmpafao0r0001oihz6gr04wsv', 'cmp1veqi20015ojvqpgvw810b', 'IMG_20260302_120335_914.jpg', '/uploads/50f875cb-b99d-495c-8f27-c5c5be3beaf6.jpg', 'image/jpeg', 3238041, 'image', 1779061522204);
-INSERT INTO "Attachment" ("id", "projectId", "fileName", "filePath", "fileType", "fileSize", "category", "createdAt") VALUES ('cmpafbh740007oihz0vsb89do', 'cmp1veqi20015ojvqpgvw810b', 'IMG_20260313_144138_941.jpg', '/uploads/1620e799-c61a-489b-ac3a-1a42111ff4ac.jpg', 'image/jpeg', 131134, 'evidence', 1779061560016);
 INSERT INTO "Attachment" ("id", "projectId", "fileName", "filePath", "fileType", "fileSize", "category", "createdAt") VALUES ('cmpafbhhy000boihz3hhedufc', 'cmp1veqi20015ojvqpgvw810b', 'Datos.P.D.P.ARTKAM.xlsx', '/uploads/a6baff9e-1825-449c-bd75-91b05d6cd1b9.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 12201, 'evidence', 1779061560407);
 INSERT INTO "Attachment" ("id", "projectId", "fileName", "filePath", "fileType", "fileSize", "category", "createdAt") VALUES ('cmpagea32000boiymmzjmg4de', 'cmp1veqi20015ojvqpgvw810b', '1000025531.mp4', '/uploads/8f2d23ab-2a21-425c-aced-fefd71b0776a.mp4', 'video/mp4', 1373915, 'pitch_video', 1779063370382);
 
@@ -95,6 +94,7 @@ INSERT INTO "AuditLog" ("id", "userId", "projectId", "action", "details", "creat
 INSERT INTO "AuditLog" ("id", "userId", "projectId", "action", "details", "createdAt") VALUES ('cmpage53t0009oiymyydqyqh6', 'cmp1veqhf000pojvqew910kq8', 'cmp1veqi20015ojvqpgvw810b', 'FILE_DELETED', 'Archivo "1000025531.mp4" eliminado', 1779063363929);
 INSERT INTO "AuditLog" ("id", "userId", "projectId", "action", "details", "createdAt") VALUES ('cmpagea33000doiympsf8t2mx', 'cmp1veqhf000pojvqew910kq8', 'cmp1veqi20015ojvqpgvw810b', 'FILE_UPLOADED', 'Archivo "1000025531.mp4" subido al proyecto', 1779063370383);
 INSERT INTO "AuditLog" ("id", "userId", "projectId", "action", "details", "createdAt") VALUES ('cmpageg2b000foiym2b3dimu9', 'cmp1veqhf000pojvqew910kq8', 'cmp1veqi20015ojvqpgvw810b', 'PROJECT_UPDATED', 'Proyecto "EcoTurismo360" actualizado', 1779063378132);
+INSERT INTO "AuditLog" ("id", "userId", "projectId", "action", "details", "createdAt") VALUES ('cmpagfpt9000hoiym1zhrekvy', 'cmp1veqhf000pojvqew910kq8', 'cmp1veqi20015ojvqpgvw810b', 'FILE_DELETED', 'Archivo "IMG_20260313_144138_941.jpg" eliminado', 1779063437422);
 
 -- Table: Category
 DROP TABLE IF EXISTS "Category";

@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: [
     ".space-z.ai",
   ],
+  // Increase body size limit for file uploads (images, videos, attachments)
+  serverExternalPackages: ['sharp'],
 };
 
 export default nextConfig;

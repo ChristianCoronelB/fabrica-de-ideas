@@ -337,6 +337,34 @@ export function ProjectForm() {
     setCurrentStep((prev) => Math.max(prev - 1, 1))
   }
 
+  // ─── Upload a file helper ────────────────────────────────
+  const uploadFile = async (file: File, projectId: string, category: string): Promise<{ filePath: string } | null> => {
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('projectId', projectId)
+      fd.append('category', category)
+      const token = localStorage.getItem('fabrica_token')
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      })
+      if (res.ok) {
+        return await res.json()
+      } else {
+        const errData = await res.json().catch(() => ({}))
+        console.error('Upload error:', errData)
+        toast.error(errData.error || `Error al subir archivo: ${file.name}`)
+        return null
+      }
+    } catch (err) {
+      console.error('Upload exception:', err)
+      toast.error(`Error de conexión al subir: ${file.name}`)
+      return null
+    }
+  }
+
   // ─── Image Upload Handler ────────────────────────────────
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -348,37 +376,33 @@ export function ProjectForm() {
       return
     }
 
-    // Show preview
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('La imagen no debe superar los 10MB')
+      return
+    }
+
+    // Show preview immediately
     const reader = new FileReader()
     reader.onload = (ev) => {
       setImagePreview(ev.target?.result as string)
     }
     reader.readAsDataURL(file)
 
-    if (isEditing && editId) {
-      // If editing, upload immediately
+    if (editId) {
+      // If we have a project ID (editing or already created), upload immediately
       try {
-        const formDataObj = new FormData()
-        formDataObj.append('file', file)
-        formDataObj.append('projectId', editId)
-        formDataObj.append('category', 'image')
-        const token = localStorage.getItem('fabrica_token')
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-          body: formDataObj,
-        })
-        if (res.ok) {
-          const attachment = await res.json()
-          updateField('imageUrl', attachment.filePath)
-          setImagePreview(attachment.filePath)
+        const result = await uploadFile(file, editId, 'image')
+        if (result) {
+          updateField('imageUrl', result.filePath)
+          setImagePreview(result.filePath)
           toast.success('Imagen subida correctamente')
         }
       } catch {
         toast.error('Error al subir imagen')
       }
     } else {
-      // If creating, store the File object for later upload
+      // If creating and no project yet, store the File object for later upload
       setImageFile(file)
     }
   }
@@ -419,8 +443,8 @@ export function ProjectForm() {
       setVideoFile(file)
       setVideoPreview(videoUrl)
 
-      // If editing, upload immediately
-      if (isEditing && editId) {
+      // If we have a project ID (editing or already created), upload immediately
+      if (editId) {
         try {
           // Delete existing pitch video if any
           if (existingPitchVideo) {
@@ -428,22 +452,17 @@ export function ProjectForm() {
             setExistingPitchVideo(null)
           }
 
-          const fd = new FormData()
-          fd.append('file', file)
-          fd.append('projectId', editId)
-          fd.append('category', 'pitch_video')
-          const token = localStorage.getItem('fabrica_token')
-          const res = await fetch('/api/upload', {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}` },
-            body: fd,
-          })
-          if (res.ok) {
-            const attachment = await res.json()
-            setExistingPitchVideo(attachment)
+          const result = await uploadFile(file, editId, 'pitch_video')
+          if (result) {
+            setExistingPitchVideo({
+              id: '', // Will be refreshed from server on next load
+              fileName: file.name,
+              filePath: result.filePath,
+              fileType: file.type,
+              fileSize: file.size,
+              category: 'pitch_video',
+            })
             toast.success('Video subido correctamente')
-          } else {
-            toast.error('Error al subir el video')
           }
         } catch {
           toast.error('Error al subir el video')
@@ -580,82 +599,59 @@ export function ProjectForm() {
       }
 
       let projectId = editId
+      let uploadErrors = 0
 
       if (isEditing) {
         await apiFetch(`/api/projects/${editId}`, {
           method: 'PUT',
           body: JSON.stringify(payload),
         })
-        toast.success('Proyecto actualizado correctamente')
       } else {
+        // Create project as DRAFT first to get the projectId
         const result = await apiFetch<{ id: string }>('/api/projects', {
           method: 'POST',
           body: JSON.stringify({ ...payload, status: 'DRAFT' }),
         })
         projectId = result.id
-        toast.success(submitAsDraft ? 'Borrador guardado' : 'Proyecto enviado correctamente')
       }
 
-      const token = localStorage.getItem('fabrica_token')
-
-      // Upload image file for new projects
-      if (projectId && imageFile && !isEditing) {
-        try {
-          const fd = new FormData()
-          fd.append('file', imageFile)
-          fd.append('projectId', projectId)
-          fd.append('category', 'image')
-          const res = await fetch('/api/upload', {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}` },
-            body: fd,
-          })
-          if (res.ok) {
-            const attachment = await res.json()
-            // Update project imageUrl
-            await apiFetch(`/api/projects/${projectId}`, {
-              method: 'PUT',
-              body: JSON.stringify({ imageUrl: attachment.filePath }),
-            })
+      // ─── Upload files (for new projects, files are stored in state) ───────
+      if (projectId && !isEditing) {
+        // Upload image file
+        if (imageFile) {
+          const imgResult = await uploadFile(imageFile, projectId, 'image')
+          if (imgResult) {
+            // The upload route already updates project.imageUrl for 'image' category
+            // No need to do a separate PUT
+          } else {
+            uploadErrors++
           }
-        } catch {
-          // Non-critical error
         }
-      }
 
-      // Upload video pitch if provided (only for new projects, editing uploads immediately)
-      if (projectId && videoFile && !isEditing) {
-        try {
-          const fd = new FormData()
-          fd.append('file', videoFile)
-          fd.append('projectId', projectId)
-          fd.append('category', 'pitch_video')
-          const res = await fetch('/api/upload', {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}` },
-            body: fd,
-          })
-          if (!res.ok) {
-            toast.error('Error al subir el video pitch')
+        // Upload video pitch
+        if (videoFile) {
+          const vidResult = await uploadFile(videoFile, projectId, 'pitch_video')
+          if (!vidResult) {
+            uploadErrors++
           }
-        } catch {
-          toast.error('Error al subir el video pitch')
         }
-      }
 
-      // Upload pending files
-      if (projectId && pendingFiles.length > 0) {
+        // Upload pending evidence files
         for (const file of pendingFiles) {
-          const fd = new FormData()
-          fd.append('file', file)
-          fd.append('projectId', projectId)
-          fd.append('category', 'evidence')
-          await fetch('/api/upload', {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}` },
-            body: fd,
-          })
+          const evResult = await uploadFile(file, projectId, 'evidence')
+          if (!evResult) {
+            uploadErrors++
+          }
         }
+      }
+
+      // Show appropriate feedback
+      if (isEditing) {
+        toast.success('Proyecto actualizado correctamente')
+      } else if (uploadErrors > 0) {
+        toast.warning(`Proyecto creado, pero ${uploadErrors} archivo(s) no se pudieron subir. Puedes subirlos desde el detalle del proyecto.`)
+      } else {
+        toast.success(submitAsDraft ? 'Borrador guardado' : 'Proyecto enviado correctamente')
       }
 
       // If submitting (not draft), update status

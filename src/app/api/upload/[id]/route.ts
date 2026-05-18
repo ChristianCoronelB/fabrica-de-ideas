@@ -2,7 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getAuthContext, isAdmin } from '@/lib/api-auth'
 import { unlink } from 'fs/promises'
+import { existsSync } from 'fs'
 import path from 'path'
+
+function getUploadsDir(): string {
+  const cwd = process.cwd()
+  if (cwd.includes('.next/standalone')) {
+    return path.join(cwd, '..', '..', 'public', 'uploads')
+  }
+  return path.join(cwd, 'public', 'uploads')
+}
 
 // DELETE /api/upload/[id] - Delete attachment
 export async function DELETE(
@@ -34,10 +43,28 @@ export async function DELETE(
 
     // Remove file from filesystem
     try {
-      const fullPath = path.join(process.cwd(), 'public', attachment.filePath)
-      await unlink(fullPath)
-    } catch {
-      // File might already be deleted, continue
+      const fullPath = path.join(getUploadsDir(), path.basename(attachment.filePath))
+      if (existsSync(fullPath)) {
+        await unlink(fullPath)
+        console.log(`🗑️ File deleted from disk: ${path.basename(attachment.filePath)}`)
+      } else {
+        console.warn(`⚠️ File not found on disk: ${fullPath}`)
+      }
+    } catch (err) {
+      console.warn('Warning: Could not delete file from disk:', err)
+      // Continue with DB deletion even if file deletion fails
+    }
+
+    // If this was the project image, clear the imageUrl
+    if (attachment.category === 'image') {
+      try {
+        await db.project.update({
+          where: { id: attachment.projectId },
+          data: { imageUrl: null },
+        })
+      } catch {
+        // Non-critical
+      }
     }
 
     // Delete attachment record

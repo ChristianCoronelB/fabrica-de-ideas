@@ -317,21 +317,31 @@ export function ProjectDetail() {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!projectId || !e.target.files?.length) return
     setIsUploading(true)
+    let uploadErrors = 0
     try {
       for (const file of Array.from(e.target.files)) {
         const formData = new FormData()
         formData.append('file', file)
         formData.append('projectId', projectId)
         formData.append('category', 'evidence')
-        await fetch('/api/upload', {
+        const res = await fetch('/api/upload', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${localStorage.getItem('fabrica_token')}`,
           },
           body: formData,
         })
+        if (!res.ok) {
+          uploadErrors++
+          const errData = await res.json().catch(() => ({}))
+          console.error('Upload error for', file.name, ':', errData)
+        }
       }
-      toast.success('Archivo(s) subido(s) correctamente')
+      if (uploadErrors === 0) {
+        toast.success('Archivo(s) subido(s) correctamente')
+      } else {
+        toast.warning(`${uploadErrors} archivo(s) no se pudieron subir`)
+      }
       fetchProject()
     } catch {
       toast.error('Error al subir archivo')

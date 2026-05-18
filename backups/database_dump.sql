@@ -1,5 +1,5 @@
 -- Fábrica de Ideas Database Dump
--- Generated at: 2026-05-18T00:10:26.183Z
+-- Generated at: 2026-05-18T00:15:53.462Z
 -- ============================================
 
 -- Table: AppSetting
@@ -11,6 +11,9 @@ CREATE TABLE "AppSetting" (
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL
 );
+
+INSERT INTO "AppSetting" ("id", "key", "value", "createdAt", "updatedAt") VALUES ('cmpag7tlh0000oiymv0qyiwtw', 'copyrightText', 'Fábrica de Ideas', 1779063069077, 1779063075140);
+INSERT INTO "AppSetting" ("id", "key", "value", "createdAt", "updatedAt") VALUES ('cmpag7tlj0001oiymkn8tnnc9', 'organizationName', 'Fábrica de Ideas', 1779063069079, 1779063075141);
 
 -- Table: Area
 DROP TABLE IF EXISTS "Area";

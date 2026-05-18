@@ -1,5 +1,5 @@
 -- Fábrica de Ideas Database Dump
--- Generated at: 2026-05-18T05:36:10.909Z
+-- Generated at: 2026-05-18T05:39:06.341Z
 -- ============================================
 
 -- Table: AppSetting
@@ -80,6 +80,7 @@ INSERT INTO "AuditLog" ("id", "userId", "projectId", "action", "details", "creat
 INSERT INTO "AuditLog" ("id", "userId", "projectId", "action", "details", "createdAt") VALUES ('cmpaq1y0c000doiws962o7hap', 'cmpanacyw000koixl6443hc5a', 'cmpanacyz000voixlg4nd33ml', 'FILE_UPLOADED', 'Archivo "1000025531.mp4" subido al proyecto (pitch_video)', 1779079591020);
 INSERT INTO "AuditLog" ("id", "userId", "projectId", "action", "details", "createdAt") VALUES ('cmpaq27gb000hoiwswvloyrj0', 'cmpanacyw000koixl6443hc5a', 'cmpanacyz000voixlg4nd33ml', 'FILE_UPLOADED', 'Archivo "1000025332.jpg" subido al proyecto (image)', 1779079603260);
 INSERT INTO "AuditLog" ("id", "userId", "projectId", "action", "details", "createdAt") VALUES ('cmpaq2mxe000joiwsqkg7krq7', 'cmpanacyw000koixl6443hc5a', 'cmpanacyz000voixlg4nd33ml', 'PROJECT_UPDATED', 'Proyecto "EcoTurismo360" actualizado', 1779079623315);
+INSERT INTO "AuditLog" ("id", "userId", "projectId", "action", "details", "createdAt") VALUES ('cmparxd1q000uoiwsgh558zer', 'cmpanacyw000noixl67swu5pd', 'cmpanacyz000toixljrrv94nj', 'EVALUATION_STARTED', 'Evaluación iniciada para el proyecto "FinVerde"', 1779082736462);
 
 -- Table: Category
 DROP TABLE IF EXISTS "Category";
@@ -118,6 +119,7 @@ INSERT INTO "Evaluation" ("id", "projectId", "evaluatorId", "totalScore", "comme
 INSERT INTO "Evaluation" ("id", "projectId", "evaluatorId", "totalScore", "comments", "isDraft", "submittedAt", "createdAt", "updatedAt") VALUES ('cmpanaczf002noixli6oqyohr', 'cmpanacz0000zoixlflgk25g3', 'cmpanacyw000noixl67swu5pd', 96, 'Proyecto sobresaliente. La combinación de conocimiento ancestral con validación científica rigurosa es un modelo a seguir. Recomiendo como ganador.', 0, 1732060800000, 1779074944828, 1779074944828);
 INSERT INTO "Evaluation" ("id", "projectId", "evaluatorId", "totalScore", "comments", "isDraft", "submittedAt", "createdAt", "updatedAt") VALUES ('cmpanaczg002voixl0e6ga9kf', 'cmpanacz0000zoixlflgk25g3', 'cmpanacyx000poixl54djol3h', 94, 'Proyecto de excelencia. Los estudios preclínicos son prometedores y el enfoque de preservar conocimiento ancestral con estándares modernos es visionary.', 0, 1732147200000, 1779074944829, 1779074944829);
 INSERT INTO "Evaluation" ("id", "projectId", "evaluatorId", "totalScore", "comments", "isDraft", "submittedAt", "createdAt", "updatedAt") VALUES ('cmpanaczh0033oixle76lcy03', 'cmpanacyz000uoixlwvjw6gpg', 'cmpanacyw000noixl67swu5pd', 12, '', 1, NULL, 1779074944830, 1779074944830);
+INSERT INTO "Evaluation" ("id", "projectId", "evaluatorId", "totalScore", "comments", "isDraft", "submittedAt", "createdAt", "updatedAt") VALUES ('cmparxd1n000loiws2xi63ohb', 'cmpanacyz000toixljrrv94nj', 'cmpanacyw000noixl67swu5pd', 0, NULL, 1, NULL, 1779082736460, 1779082736460);
 
 -- Table: EvaluationCriteria
 DROP TABLE IF EXISTS "EvaluationCriteria";
@@ -194,6 +196,12 @@ INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "max
 INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmpanaczi0037oixlaegyyyu2', 'cmpanaczh0033oixle76lcy03', 'cmpanacyr000goixlk2bc324z', 0, 20, NULL);
 INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmpanaczi0038oixl0is69gpm', 'cmpanaczh0033oixle76lcy03', 'cmpanacyr000hoixl5b38s0v6', 0, 10, NULL);
 INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmpanaczi0039oixlfz83kjf5', 'cmpanaczh0033oixle76lcy03', 'cmpanacyr000ioixl1uwm0655', 0, 20, NULL);
+INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmparxd1o000noiws926bdbza', 'cmparxd1n000loiws2xi63ohb', 'cmpanacyr000eoixl5uyzfvst', 0, 20, NULL);
+INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmparxd1o000ooiwsltjcbczo', 'cmparxd1n000loiws2xi63ohb', 'cmpanacyr000foixl8c9m4kqh', 0, 15, NULL);
+INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmparxd1o000poiwsa02ljoli', 'cmparxd1n000loiws2xi63ohb', 'cmpanacyr000joixl94zm1pfs', 0, 15, NULL);
+INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmparxd1o000qoiwszc5qbk0o', 'cmparxd1n000loiws2xi63ohb', 'cmpanacyr000goixlk2bc324z', 0, 20, NULL);
+INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmparxd1o000roiws0fen7729', 'cmparxd1n000loiws2xi63ohb', 'cmpanacyr000hoixl5b38s0v6', 0, 10, NULL);
+INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmparxd1o000soiwsxyoxkdlj', 'cmparxd1n000loiws2xi63ohb', 'cmpanacyr000ioixl1uwm0655', 0, 20, NULL);
 
 -- Table: Institution
 DROP TABLE IF EXISTS "Institution";

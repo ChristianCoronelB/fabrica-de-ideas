@@ -1,5 +1,5 @@
 -- Fábrica de Ideas Database Dump
--- Generated at: 2026-05-18T00:28:33.908Z
+-- Generated at: 2026-05-18T00:30:52.765Z
 -- ============================================
 
 -- Table: AppSetting
@@ -134,7 +134,7 @@ INSERT INTO "Evaluation" ("id", "projectId", "evaluatorId", "totalScore", "comme
 INSERT INTO "Evaluation" ("id", "projectId", "evaluatorId", "totalScore", "comments", "isDraft", "submittedAt", "createdAt", "updatedAt") VALUES ('cmp1veqit002nojvqbe4a6899', 'cmp1veqhz000uojvqm0j6hvuw', 'cmp1veqhd000lojvqgz8j556g', 96, 'Proyecto sobresaliente. La combinación de conocimiento ancestral con validación científica rigurosa es un modelo a seguir. Recomiendo como ganador.', 0, 1732060800000, 1778544390342, 1778544390342);
 INSERT INTO "Evaluation" ("id", "projectId", "evaluatorId", "totalScore", "comments", "isDraft", "submittedAt", "createdAt", "updatedAt") VALUES ('cmp1veqiv002vojvq17z20gyv', 'cmp1veqhz000uojvqm0j6hvuw', 'cmp1veqhe000oojvqong8oiwc', 94, 'Proyecto de excelencia. Los estudios preclínicos son prometedores y el enfoque de preservar conocimiento ancestral con estándares modernos es visionary.', 0, 1732147200000, 1778544390343, 1778544390343);
 INSERT INTO "Evaluation" ("id", "projectId", "evaluatorId", "totalScore", "comments", "isDraft", "submittedAt", "createdAt", "updatedAt") VALUES ('cmp1veqiw0033ojvqpuvfe2af', 'cmp1veqhz000rojvqie6t489l', 'cmp1veqhd000lojvqgz8j556g', 100, '', 1, NULL, 1778544390345, 1778709538525);
-INSERT INTO "Evaluation" ("id", "projectId", "evaluatorId", "totalScore", "comments", "isDraft", "submittedAt", "createdAt", "updatedAt") VALUES ('cmp1wnmwe000aojkjbby6i3am', 'cmp1veqhz000vojvq92bh2rhe', 'cmp1veqhd000lojvqgz8j556g', 93, '', 1, NULL, 1778546485166, 1778705608818);
+INSERT INTO "Evaluation" ("id", "projectId", "evaluatorId", "totalScore", "comments", "isDraft", "submittedAt", "createdAt", "updatedAt") VALUES ('cmp1wnmwe000aojkjbby6i3am', 'cmp1veqhz000vojvq92bh2rhe', 'cmp1veqhd000lojvqgz8j556g', 93, '', 1, NULL, 1778546485166, 1779064195904);
 INSERT INTO "Evaluation" ("id", "projectId", "evaluatorId", "totalScore", "comments", "isDraft", "submittedAt", "createdAt", "updatedAt") VALUES ('cmp1wwq5c0011ojkj6dbx0k5z', 'cmp1wuhhe000lojkjzd3x35ub', 'cmp1veqhd000lojvqgz8j556g', 84, 'Excelente Propuest', 0, 1778547125296, 1778546909280, 1778547125298);
 
 -- Table: EvaluationCriteria
@@ -213,11 +213,11 @@ INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "max
 INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmp1veqix0038ojvq3z1vw1wr', 'cmp1veqiw0033ojvqpuvfe2af', 'cmp1veqh6000gojvqnm253czb', 10, 10, NULL);
 INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmp1veqix0039ojvqvriku2p5', 'cmp1veqiw0033ojvqpuvfe2af', 'cmp1veqh7000jojvqkjkx2d4n', 20, 20, NULL);
 INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmp1wnmwe000cojkjbdbgwop7', 'cmp1wnmwe000aojkjbby6i3am', 'cmp1veqh6000eojvqanonrs4d', 19.5, 20, NULL);
-INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmp1wnmwe000dojkje6n0smw8', 'cmp1wnmwe000aojkjbby6i3am', 'cmp1veqh7000iojvqbk48h6c4', 12, 15, NULL);
-INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmp1wnmwe000eojkjxzgxa0oi', 'cmp1wnmwe000aojkjbby6i3am', 'cmp1veqh6000fojvqc82rdwhe', 14.5, 15, NULL);
-INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmp1wnmwe000fojkjk9b9f7nc', 'cmp1wnmwe000aojkjbby6i3am', 'cmp1veqh6000hojvqmzztenfi', 19, 20, NULL);
-INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmp1wnmwe000gojkj5gsnyjnx', 'cmp1wnmwe000aojkjbby6i3am', 'cmp1veqh6000gojvqnm253czb', 8.5, 10, NULL);
-INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmp1wnmwe000hojkjon368ont', 'cmp1wnmwe000aojkjbby6i3am', 'cmp1veqh7000jojvqkjkx2d4n', 19.5, 20, NULL);
+INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmp1wnmwe000dojkje6n0smw8', 'cmp1wnmwe000aojkjbby6i3am', 'cmp1veqh7000iojvqbk48h6c4', 15, 15, NULL);
+INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmp1wnmwe000eojkjxzgxa0oi', 'cmp1wnmwe000aojkjbby6i3am', 'cmp1veqh6000fojvqc82rdwhe', 8.5, 15, NULL);
+INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmp1wnmwe000fojkjk9b9f7nc', 'cmp1wnmwe000aojkjbby6i3am', 'cmp1veqh6000hojvqmzztenfi', 20, 20, NULL);
+INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmp1wnmwe000gojkj5gsnyjnx', 'cmp1wnmwe000aojkjbby6i3am', 'cmp1veqh6000gojvqnm253czb', 10, 10, NULL);
+INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmp1wnmwe000hojkjon368ont', 'cmp1wnmwe000aojkjbby6i3am', 'cmp1veqh7000jojvqkjkx2d4n', 20, 20, NULL);
 INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmp1wwq5c0013ojkjxmjpxlqo', 'cmp1wwq5c0011ojkj6dbx0k5z', 'cmp1veqh6000eojvqanonrs4d', 20, 20, NULL);
 INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmp1wwq5c0014ojkj3fk8gcnb', 'cmp1wwq5c0011ojkj6dbx0k5z', 'cmp1veqh7000iojvqbk48h6c4', 14.5, 15, NULL);
 INSERT INTO "EvaluationScore" ("id", "evaluationId", "criteriaId", "score", "maxScore", "observation") VALUES ('cmp1wwq5c0015ojkjewbdlojh', 'cmp1wwq5c0011ojkj6dbx0k5z', 'cmp1veqh6000fojvqc82rdwhe', 14.5, 15, NULL);

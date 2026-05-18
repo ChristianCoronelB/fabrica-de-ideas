@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Search, FolderKanban, Loader2 } from 'lucide-react'
+import { Search, FolderKanban, Loader2, AlertTriangle } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { apiFetch } from '@/lib/api'
 import { useNavStore } from '@/store/nav-store'
@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { toast } from 'sonner'
 
 interface Project {
   id: string
@@ -35,14 +36,16 @@ interface Evaluation {
 interface EvaluationCreateDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onCreated?: () => void
 }
 
-export function EvaluationCreateDialog({ open, onOpenChange }: EvaluationCreateDialogProps) {
+export function EvaluationCreateDialog({ open, onOpenChange, onCreated }: EvaluationCreateDialogProps) {
   const [projects, setProjects] = useState<Project[]>([])
   const [evaluations, setEvaluations] = useState<Evaluation[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const { navigate } = useNavStore()
   const { user } = useAuthStore()
@@ -50,6 +53,8 @@ export function EvaluationCreateDialog({ open, onOpenChange }: EvaluationCreateD
   const fetchData = useCallback(async () => {
     if (!open) return
     setLoading(true)
+    setError(null)
+    setSelectedId(null)
     try {
       const [projectsData, evalsData] = await Promise.all([
         apiFetch<{ projects: Project[]; total: number }>('/api/projects?limit=50'),
@@ -57,8 +62,9 @@ export function EvaluationCreateDialog({ open, onOpenChange }: EvaluationCreateD
       ])
       setProjects(projectsData.projects || [])
       setEvaluations(evalsData || [])
-    } catch {
-      // Error handled by apiFetch
+    } catch (err) {
+      console.error('Error loading data for evaluation dialog:', err)
+      setError('Error al cargar los datos. Intenta de nuevo.')
     } finally {
       setLoading(false)
     }
@@ -68,6 +74,7 @@ export function EvaluationCreateDialog({ open, onOpenChange }: EvaluationCreateD
     fetchData()
   }, [fetchData])
 
+  // Filter projects: only those NOT already evaluated by this evaluator
   const evaluatedProjectIds = new Set(evaluations.map((e) => e.projectId))
 
   const availableProjects = projects.filter(
@@ -81,15 +88,26 @@ export function EvaluationCreateDialog({ open, onOpenChange }: EvaluationCreateD
   const handleCreate = async () => {
     if (!selectedId) return
     setCreating(true)
+    setError(null)
     try {
       const evaluation = await apiFetch<{ id: string }>('/api/evaluations', {
         method: 'POST',
         body: JSON.stringify({ projectId: selectedId }),
       })
+      toast.success('Evaluación creada', {
+        description: 'Ahora puedes comenzar a evaluar el proyecto',
+      })
       onOpenChange(false)
+      // Notify parent to refresh list
+      onCreated?.()
+      // Navigate to the evaluation detail
       navigate('evaluation-detail', { id: evaluation.id })
-    } catch {
-      // Error handled by apiFetch
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al crear la evaluación'
+      setError(message)
+      toast.error('Error al crear evaluación', {
+        description: message,
+      })
     } finally {
       setCreating(false)
     }
@@ -118,6 +136,13 @@ export function EvaluationCreateDialog({ open, onOpenChange }: EvaluationCreateD
           </DialogDescription>
         </DialogHeader>
 
+        {error && (
+          <div className="flex items-center gap-2 p-3 rounded-lg border border-destructive/50 bg-destructive/5 text-sm text-destructive">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -137,7 +162,7 @@ export function EvaluationCreateDialog({ open, onOpenChange }: EvaluationCreateD
             <FolderKanban className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
             <p className="text-sm text-muted-foreground">
               {availableProjects.length === 0
-                ? 'No hay proyectos disponibles para evaluar'
+                ? 'No hay proyectos disponibles para evaluar. Todos los proyectos asignados ya tienen una evaluación.'
                 : 'No se encontraron proyectos con esa búsqueda'}
             </p>
           </div>
@@ -154,7 +179,10 @@ export function EvaluationCreateDialog({ open, onOpenChange }: EvaluationCreateD
                       ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 ring-1 ring-emerald-500/30'
                       : 'border-border'
                   }`}
-                  onClick={() => setSelectedId(project.id)}
+                  onClick={() => {
+                    setSelectedId(project.id)
+                    setError(null)
+                  }}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">

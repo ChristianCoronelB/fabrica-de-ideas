@@ -467,6 +467,7 @@ export function EvaluationsList() {
       <EvaluationCreateDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
+        onCreated={fetchEvaluations}
       />
     </motion.div>
   )
